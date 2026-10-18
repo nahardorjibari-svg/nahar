@@ -1,0 +1,6 @@
+{
+  "name": "নাহার দর্জি বাড়ি - 3-Piece Inventory & Sales",
+  "description": "নাহার দর্জি বাড়ি (Nahar Dorjibari) - প্রফেশনাল মোবাইল-ফার্স্ট ৩-পিস বুটিক ইনভেন্টরি ও সেলস ম্যানেজমেন্ট ওয়েব অ্যাপ্লিকেশন উইথ ক্লাউড ফায়ারবেস।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

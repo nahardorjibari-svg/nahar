@@ -1,0 +1,200 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "3-Piece ladies clothing product entity with specifications, costs, and stock levels",
+      "type": "object",
+      "properties": {
+        "productCode": {
+          "type": "string",
+          "description": "Unique product code such as RP-001",
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Fashion product name",
+          "maxLength": 128
+        },
+        "category": {
+          "type": "string",
+          "description": "3-piece clothing category",
+          "maxLength": 64
+        },
+        "color": {
+          "type": "string",
+          "description": "Primary dress color",
+          "maxLength": 32
+        },
+        "size": {
+          "type": "string",
+          "description": "Stitching or size classification",
+          "maxLength": 32
+        },
+        "purchaseCost": {
+          "type": "number",
+          "description": "Purchase cost in Bangladeshi Taka"
+        },
+        "defaultSellingPrice": {
+          "type": "number",
+          "description": "Optional default retail selling price in Bangladeshi Taka"
+        },
+        "initialStock": {
+          "type": "number",
+          "description": "Initial stock inventory count"
+        },
+        "currentStock": {
+          "type": "number",
+          "description": "Current available inventory units"
+        },
+        "lowStockThreshold": {
+          "type": "number",
+          "description": "Threshold trigger for low stock warning alert"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Fabric and artisan notes",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp ISO string of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp ISO string of last update"
+        }
+      },
+      "required": ["productCode", "name", "category", "purchaseCost", "initialStock", "currentStock"]
+    },
+    "StockMovement": {
+      "title": "StockMovement",
+      "description": "Auditable log of every inventory addition, sale deduction, damage or adjustment",
+      "type": "object",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "ID of the target product",
+          "maxLength": 64
+        },
+        "productCode": {
+          "type": "string",
+          "description": "Snapshot of unique product code",
+          "maxLength": 32
+        },
+        "type": {
+          "type": "string",
+          "description": "Movement classification",
+          "enum": ["INITIAL", "RESTOCK", "ADJUSTMENT_ADD", "ADJUSTMENT_SUBTRACT", "DAMAGE", "SALE", "RETURN"]
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Magnitude of units changed"
+        },
+        "change": {
+          "type": "number",
+          "description": "Signed delta of unit change"
+        },
+        "previousStock": {
+          "type": "number",
+          "description": "Inventory count before movement"
+        },
+        "newStock": {
+          "type": "number",
+          "description": "Inventory count after movement"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Audit reason or batch lot information",
+          "maxLength": 256
+        },
+        "note": {
+          "type": "string",
+          "description": "Extended audit remarks",
+          "maxLength": 512
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp ISO string of stock transaction"
+        },
+        "user": {
+          "type": "string",
+          "description": "User or admin actor performing the transaction",
+          "maxLength": 128
+        }
+      },
+      "required": ["productId", "productCode", "type", "quantity", "change", "previousStock", "newStock", "reason"]
+    },
+    "BrandSettings": {
+      "title": "BrandSettings",
+      "description": "Boutique branding, contact details, currency, and default thresholds",
+      "type": "object",
+      "properties": {
+        "brandName": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "logoUrl": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "slogan": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 128
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "branch": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "defaultLowStockThreshold": {
+          "type": "number"
+        },
+        "invoiceNote": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "required": ["brandName", "currency"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": {
+        "$ref": "Product"
+      },
+      "description": "Collection of all 3-piece apparel products with unique codes, images, and live inventory levels"
+    },
+    "/stock_movements/{movementId}": {
+      "schema": {
+        "$ref": "StockMovement"
+      },
+      "description": "Immutable audit ledger of every inventory change, batch inward, adjustment, or sale deduction"
+    },
+    "/brand_settings/{settingId}": {
+      "schema": {
+        "$ref": "BrandSettings"
+      },
+      "description": "Configurable boutique brand identity, logo, showroom contact information, and defaults"
+    }
+  }
+}

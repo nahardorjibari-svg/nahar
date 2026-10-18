@@ -337,7 +337,7 @@ export default function App() {
       </div>
 
       {/* Main Viewport Container */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative z-10 p-4 sm:p-6">
+      <div className="flex-1 flex flex-col h-full w-full overflow-hidden relative z-10">
         {/* Top Operational Status Banner (Cloud vs Demo) */}
         <DataBanner
           onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}

@@ -252,11 +252,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 )}
               </div>
               <input
-                type="text"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                className="flex-1 px-3 py-2.5 glass-input rounded-xl text-xs text-white"
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setLogoUrl(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="flex-1 px-3 py-2.5 glass-input rounded-xl text-xs text-slate-400 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500/20 file:text-emerald-300 hover:file:bg-emerald-500/30 cursor-pointer"
               />
             </div>
           </div>

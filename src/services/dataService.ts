@@ -1392,6 +1392,19 @@ export class DataService {
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(INITIAL_CUSTOMERS));
     localStorage.setItem(RETURNS_KEY, JSON.stringify(INITIAL_RETURNS));
   }
+
+  // Clear all data
+  public static clearAllData(): void {
+    localStorage.removeItem(PRODUCTS_KEY);
+    localStorage.removeItem(MOVEMENTS_KEY);
+    localStorage.removeItem(BRAND_KEY);
+    localStorage.removeItem(ORDERS_KEY);
+    localStorage.removeItem(VIDEOS_KEY);
+    localStorage.removeItem(CUSTOMERS_KEY);
+    localStorage.removeItem(RETURNS_KEY);
+    localStorage.removeItem(SETTLEMENTS_KEY);
+    window.location.reload();
+  }
 }
 
 // Bangladesh Currency Formatter (৳ BDT)

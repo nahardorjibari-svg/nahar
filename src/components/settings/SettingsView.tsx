@@ -53,6 +53,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [steadfastBaseUrl, setSteadfastBaseUrl] = useState('https://portal.steadfast.com.bd/api/v1/');
 
   const [isSaved, setIsSaved] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const isCloud = DataService.isCloudMode();
   const firebaseConfig = getStoredFirebaseConfig();
 
@@ -380,6 +381,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 className="w-full px-3 py-2.5 glass-input rounded-xl text-xs font-mono-numbers text-white"
               />
             </div>
+          </div>
+          
+          <div className="pt-6 mt-6 border-t border-white/10">
+            <h4 className="font-bold text-rose-400 mb-3">Danger Zone: Data Wipe</h4>
+          <div className="pt-6 mt-6 border-t border-white/10">
+            <h4 className="font-bold text-rose-400 mb-3">Danger Zone: Data Wipe</h4>
+            {showClearConfirm ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-white font-semibold">Are you sure?</span>
+                <button
+                  onClick={() => DataService.clearAllData()}
+                  className="px-4 py-2 bg-rose-500 text-slate-950 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-4 py-2 glass-card text-slate-300 hover:text-white border border-white/10 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Clear All Application Data
+              </button>
+            )}
+          </div>
           </div>
         </div>
       </div>

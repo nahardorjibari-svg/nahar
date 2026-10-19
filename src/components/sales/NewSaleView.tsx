@@ -167,6 +167,7 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
   const [trxId, setTrxId] = useState('');
   const [courierProvider, setCourierProvider] = useState('Steadfast Courier');
   const [orderNotes, setOrderNotes] = useState('');
+  const [isInstantWalkIn, setIsInstantWalkIn] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -498,6 +499,55 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
           <span>{errorMessage}</span>
         </div>
       )}
+
+      {/* Instant Walk-In / Hand-to-Hand Sale Banner */}
+      <div className="glass-card p-4 rounded-2xl border border-amber-500/35 bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold shrink-0 text-base">
+            ⚡
+          </div>
+          <div>
+            <h4 className="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
+              <span>Instant Walk-In / Hand-to-Hand Sale Mode</span>
+              <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-mono">No Courier Needed</span>
+            </h4>
+            <p className="text-[11px] text-slate-300">Direct in-person sales where products are handed to the customer directly. Bypasses courier auto-shipping.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const nextState = !isInstantWalkIn;
+            setIsInstantWalkIn(nextState);
+            if (nextState) {
+              setDeliveryFee(0);
+              setSellerCourierCost(0);
+              setPaymentMethod('Cash');
+              setPaymentStatus('COLLECTED');
+              setCourierProvider('Instant Walk-In (Direct)');
+              if (!customerName.trim()) setCustomerName('Walk-in Customer');
+              if (!customerPhone.trim()) setCustomerPhone('01700000000');
+              if (!customerAddress.trim()) setCustomerAddress('Direct In-Person Walk-In Store Sale');
+            } else {
+              setDeliveryFee(70);
+              setSellerCourierCost(70);
+              setPaymentMethod('COD');
+              setPaymentStatus('PENDING_COD');
+              setCourierProvider('Steadfast Courier');
+              if (customerName === 'Walk-in Customer') setCustomerName('');
+              if (customerPhone === '01700000000') setCustomerPhone('');
+              if (customerAddress === 'Direct In-Person Walk-In Store Sale') setCustomerAddress('');
+            }
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-2 ${
+            isInstantWalkIn
+              ? 'bg-amber-500 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.5)]'
+              : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+          }`}
+        >
+          <span>{isInstantWalkIn ? '✓ Instant Walk-In Active' : 'Enable Instant Walk-In'}</span>
+        </button>
+      </div>
 
       <form onSubmit={handleConfirmOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (7 Cols): Products Selection & Line Items */}

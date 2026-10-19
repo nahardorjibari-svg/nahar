@@ -46,6 +46,8 @@ import { CustomersView } from './components/customers/CustomersView';
 import { ReportsView } from './components/reports/ReportsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AdminLoginView } from './components/auth/AdminLoginView';
+import { DailyExpensesView } from './components/expenses/DailyExpensesView';
+import { DailyExpense } from './types';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('dashboard');
@@ -57,6 +59,7 @@ export default function App() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
   const [settlements, setSettlements] = useState<SettlementRecord[]>([]);
+  const [expenses, setExpenses] = useState<DailyExpense[]>([]);
 
   const [user, setUser] = useState<UserSession>({
     id: '',
@@ -119,7 +122,7 @@ export default function App() {
   // Load all application data
   const loadData = useCallback(async () => {
     try {
-      const [prods, movs, brand, ords, vids, custs, rets, sets] = await Promise.all([
+      const [prods, movs, brand, ords, vids, custs, rets, sets, exps] = await Promise.all([
         DataService.getProducts(),
         DataService.getStockMovements(),
         DataService.getBrandSettings(),
@@ -128,6 +131,7 @@ export default function App() {
         DataService.getCustomers(),
         DataService.getReturns(),
         DataService.getSettlements(),
+        DataService.getDailyExpenses(),
       ]);
       setProducts(prods);
       setMovements(movs);
@@ -137,6 +141,7 @@ export default function App() {
       setCustomers(custs);
       setReturns(rets);
       setSettlements(sets);
+      setExpenses(exps);
     } catch (e) {
       console.error('Failed to load application data:', e);
     }
@@ -500,6 +505,17 @@ export default function App() {
                 customers={customers}
                 orders={orders}
                 onNavigateToNewSale={() => setCurrentPage('new-sale')}
+              />
+            )}
+
+            {currentPage === 'expenses' && (
+              <DailyExpensesView
+                expenses={expenses}
+                products={products}
+                user={user}
+                onExpenseAdded={(newExp) => setExpenses(prev => [newExp, ...prev])}
+                onExpenseDeleted={(delId) => setExpenses(prev => prev.filter(e => e.id !== delId))}
+                onNavigateToNewSale={() => handleNavigate('new-sale')}
               />
             )}
 

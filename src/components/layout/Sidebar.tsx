@@ -16,6 +16,7 @@ import {
   ChevronRight,
   DollarSign,
   Sparkles,
+  Receipt,
 } from 'lucide-react';
 import { PageId, BrandSettings, UserSession, GlassTheme } from '../../types';
 
@@ -41,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard' as PageId, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'new-sale' as PageId, label: 'New Sale / Order', icon: ShoppingCart },
+    { id: 'expenses' as PageId, label: 'খরচ (Daily Expenses)', icon: Receipt },
     { id: 'products' as PageId, label: 'Products', icon: Shirt, badge: null },
     {
       id: 'stock' as PageId,

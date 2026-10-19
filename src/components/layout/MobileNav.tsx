@@ -16,6 +16,7 @@ import {
   Settings,
   LogOut,
   MapPin,
+  Receipt,
 } from 'lucide-react';
 import { PageId, BrandSettings, UserSession } from '../../types';
 
@@ -55,6 +56,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const fullNavItems = [
     { id: 'dashboard' as PageId, label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'new-sale' as PageId, label: 'New Sale / Order', icon: ShoppingCart },
+    { id: 'expenses' as PageId, label: 'খরচ (Daily Expenses)', icon: Receipt },
     { id: 'products' as PageId, label: '3-Piece Products', icon: Shirt },
     {
       id: 'stock' as PageId,

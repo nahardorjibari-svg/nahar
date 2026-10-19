@@ -18,6 +18,8 @@ import {
   Scan,
   X,
   Keyboard,
+  Receipt,
+  Settings,
 } from 'lucide-react';
 import {
   Product,
@@ -25,6 +27,7 @@ import {
   VideoPost,
   SaleOrder,
   PageId,
+  DailyExpense,
 } from '../../types';
 import { DataService, formatBDT } from '../../services/dataService';
 
@@ -157,9 +160,29 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
   const [orderDiscount, setOrderDiscount] = useState<number | ''>('');
   const [deliveryFee, setDeliveryFee] = useState<number | ''>(70); // Inside Dhaka default
   const [sellerCourierCost, setSellerCourierCost] = useState<number | ''>(70);
-  const [packagingCost, setPackagingCost] = useState<number | ''>(35); // Poly & boutique packaging
-  const [advertisingCost, setAdvertisingCost] = useState<number | ''>(80); // Allocated ad spend
+  const [dailyExpenses, setDailyExpenses] = useState<DailyExpense[]>([]);
   const [otherExpenses, setOtherExpenses] = useState<number | ''>(0);
+
+  // Load real daily expenses from DataService
+  useEffect(() => {
+    DataService.getDailyExpenses().then(setDailyExpenses).catch(console.error);
+  }, []);
+
+  // Total Stock across all available products
+  const totalInventoryStock = useMemo(() => {
+    return products.reduce((sum, p) => sum + Math.max(0, Number(p.currentStock) || 0), 0);
+  }, [products]);
+
+  // Total Daily Expenses recorded
+  const totalDailyExpenses = useMemo(() => {
+    return dailyExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [dailyExpenses]);
+
+  // Dynamic Per Piece Expense: Total Expenses ÷ Total Inventory Stock
+  const perPieceExpenseTotal = useMemo(() => {
+    if (totalInventoryStock <= 0) return 0;
+    return totalDailyExpenses / totalInventoryStock;
+  }, [totalDailyExpenses, totalInventoryStock]);
 
   // Payment & Courier
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'bKash' | 'Nagad' | 'Bank Transfer' | 'Cash'>('COD');
@@ -386,14 +409,16 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
     const oDiscount = Number(orderDiscount) || 0;
     const dFee = Number(deliveryFee) || 0;
     const sCourier = Number(sellerCourierCost) || dFee;
-    const pkg = Number(packagingCost) || 0;
-    const ads = Number(advertisingCost) || 0;
+    
+    // Per-piece custom expenses multiplied by number of pieces sold
+    const piecesCount = totalItemsCount > 0 ? totalItemsCount : (cartItems.length > 0 ? 1 : 0);
+    const totalAllocatedExpenses = perPieceExpenseTotal * (piecesCount || 1);
     const other = Number(otherExpenses) || 0;
 
     const totalPayable = (subtotal - oDiscount) + dFee;
     const grossProfit = (subtotal - oDiscount) - totalCogs;
     const courierDeficit = Math.max(0, sCourier - dFee);
-    const totalExpenses = pkg + ads + other + courierDeficit;
+    const totalExpenses = totalAllocatedExpenses + other + courierDeficit;
     const netProfit = grossProfit - totalExpenses;
 
     return {
@@ -402,10 +427,11 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
       totalItemsCount,
       totalPayable,
       grossProfit,
+      totalAllocatedExpenses,
       totalExpenses,
       netProfit,
     };
-  }, [cartItems, orderDiscount, deliveryFee, sellerCourierCost, packagingCost, advertisingCost, otherExpenses]);
+  }, [cartItems, orderDiscount, deliveryFee, sellerCourierCost, perPieceExpenseTotal, otherExpenses]);
 
   // Submit Order
   const handleConfirmOrder = async (e: React.FormEvent) => {
@@ -447,8 +473,8 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
         orderDiscount: Number(orderDiscount) || 0,
         deliveryFee: Number(deliveryFee) || 0,
         sellerCourierCost: Number(sellerCourierCost) || Number(deliveryFee) || 0,
-        packagingCost: Number(packagingCost) || 0,
-        advertisingCost: Number(advertisingCost) || 0,
+        packagingCost: Math.round(calculations.totalAllocatedExpenses),
+        advertisingCost: 0,
         otherExpenses: Number(otherExpenses) || 0,
         paymentMethod,
         paymentStatus: paymentMethod === 'COD' ? paymentStatus : 'COLLECTED',
@@ -777,9 +803,21 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
                             required
                             className="w-full px-2 py-1 glass-input rounded font-mono-numbers font-bold text-xs focus:ring-1 focus:ring-emerald-400 text-white"
                           />
-                          <span className="text-[9px] text-slate-400 block mt-0.5">
-                            Max {item.currentStock}
-                          </span>
+                          <div className="flex items-center justify-between text-[9px] text-slate-400 mt-0.5">
+                            <span>Max: {item.currentStock}</span>
+                            <span className="text-[8px] text-slate-500">স্টক</span>
+                          </div>
+                          {/* Auto Per Piece Expense Display from Daily Expenses Page */}
+                          <div className="mt-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-[9px] text-amber-300">
+                            <div className="flex justify-between items-center">
+                              <span>প্রতি পিস খরচ:</span>
+                              <strong className="font-mono text-amber-200">৳{perPieceExpenseTotal.toFixed(1)}</strong>
+                            </div>
+                            <div className="text-[8px] text-slate-400 flex justify-between mt-0.5">
+                              <span>{item.quantity} পিসে খরচ:</span>
+                              <span className="font-mono text-amber-300 font-semibold">৳{(item.quantity * perPieceExpenseTotal).toFixed(0)}</span>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Line Total & Profit */}
@@ -976,28 +1014,44 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block font-medium text-slate-300 mb-1">Packaging Cost (৳)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={packagingCost}
-                  onChange={e => setPackagingCost(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3 py-1.5 glass-input rounded-lg font-mono-numbers text-white"
-                />
-                <span className="text-[10px] text-slate-400">Poly, box, label</span>
+            </div>
+
+            {/* Dynamic Daily Expense Allocation from 'খরচ' Page */}
+            <div className="pt-3 border-t border-white/10 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block font-semibold text-slate-200 text-xs flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5 text-amber-400" />
+                    <span>খরচ পেজ থেকে প্রতি পিস বণ্টন (Daily Expense Allocation)</span>
+                  </label>
+                  <p className="text-[10px] text-slate-400">
+                    মোট খরচ (৳{totalDailyExpenses.toLocaleString()}) ÷ মোট স্টক ({totalInventoryStock} পিস) = ৳{perPieceExpenseTotal.toFixed(2)} / পিস
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('expenses')}
+                  className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                >
+                  <span>খরচ পেজে যান</span>
+                  <ArrowRight className="w-3 h-3 text-amber-400" />
+                </button>
               </div>
 
-              <div>
-                <label className="block font-medium text-slate-300 mb-1">Ad Allocation (৳)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={advertisingCost}
-                  onChange={e => setAdvertisingCost(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3 py-1.5 glass-input rounded-lg font-mono-numbers text-white"
-                />
-                <span className="text-[10px] text-slate-400">Live / Reel ad share</span>
+              {/* Dynamic Allocation Box */}
+              <div className="p-3 bg-black/40 border border-white/10 rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300">হিসাবকৃত প্রতি পিস খরচ:</span>
+                  <strong className="text-emerald-400 font-mono text-sm">৳{perPieceExpenseTotal.toFixed(2)} / পিস</strong>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+                  <span className="text-slate-400">
+                    এই অর্ডারে মোট বণ্টন ({calculations.totalItemsCount || 1} পিস × ৳{perPieceExpenseTotal.toFixed(2)}):
+                  </span>
+                  <span className="font-mono font-bold text-amber-300">
+                    -{formatBDT(calculations.totalAllocatedExpenses)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1079,9 +1133,22 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
                   <span>Gross Margin:</span>
                   <span className="text-emerald-400 font-bold">+{formatBDT(calculations.grossProfit)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Allocated Expenses (Pkg + Ads):</span>
-                  <span>-{formatBDT(calculations.totalExpenses)}</span>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1.5">
+                    <span>Allocated Expenses (খরচ বণ্টন):</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('expenses')}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                    >
+                      (খরচ পেজ)
+                    </button>
+                  </div>
+                  <span className="text-amber-300 font-mono font-semibold">-{formatBDT(calculations.totalAllocatedExpenses)}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 flex justify-between pr-0.5">
+                  <span>হিসাব: {calculations.totalItemsCount || 1} পিস × ৳{perPieceExpenseTotal.toFixed(2)}</span>
+                  <span className="text-slate-400 font-mono text-[9px]">(মোট স্টক {totalInventoryStock} পিস)</span>
                 </div>
                 <div className="flex justify-between pt-1 border-t border-white/10 text-xs font-bold text-emerald-300">
                   <span>Projected Net Profit:</span>
@@ -1194,6 +1261,7 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
           </div>
         </div>
       )}
+
     </div>
   );
 };

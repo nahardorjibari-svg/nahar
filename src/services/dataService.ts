@@ -10,6 +10,7 @@ import {
   SettlementRecord,
   OrderStatus,
   PaymentStatus,
+  DailyExpense,
 } from '../types';
 import {
   INITIAL_BRAND_SETTINGS,
@@ -66,6 +67,55 @@ const VIDEOS_KEY = 'nahar_videos_cache_v2';
 const CUSTOMERS_KEY = 'nahar_customers_cache_v2';
 const RETURNS_KEY = 'nahar_returns_cache_v2';
 const SETTLEMENTS_KEY = 'nahar_settlements_cache_v2';
+const EXPENSES_KEY = 'nahar_daily_expenses_v2';
+
+const INITIAL_DAILY_EXPENSES: DailyExpense[] = [
+  {
+    id: 'exp-101',
+    title: 'প্যাকেজিং পলি ব্যাগ ও ব্র্যান্ডেড টেপ (Packaging Poly & Tape)',
+    amount: 1500,
+    category: 'প্যাকেজিং (Packaging)',
+    date: new Date().toISOString().split('T')[0],
+    notes: '২০০ পিস প্রিমিয়াম সিলভার ব্র্যান্ডেড পলি ও কার্টন টেপ',
+    recordedBy: 'Super Admin',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'exp-102',
+    title: 'ফেসবুক লাইভ ও রিল স্পনসর বুস্টিং (Facebook Live Ad Boost)',
+    amount: 2500,
+    category: 'বিজ্ঞাপন ও বুস্টিং (Ads)',
+    date: new Date().toISOString().split('T')[0],
+    notes: 'ঈদুল ফিতর কালেকশন লাইভ সেল পেইড প্রমোশন',
+    recordedBy: 'Super Admin',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'exp-103',
+    title: 'অফিস চা-নাস্তা ও ডেলিভারি পার্টনার আপ্যায়ন',
+    amount: 350,
+    category: 'অফিস ও নাস্তা (Snacks)',
+    date: new Date().toISOString().split('T')[0],
+    notes: 'স্টোর ও ডেলিভারি ম্যানেজমেন্ট সাধারণ খরচ',
+    recordedBy: 'Admin',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+function getLocalExpenses(): DailyExpense[] {
+  try {
+    const data = localStorage.getItem(EXPENSES_KEY);
+    if (data) return JSON.parse(data);
+  } catch (e) {
+    console.error('Error reading local expenses', e);
+  }
+  localStorage.setItem(EXPENSES_KEY, JSON.stringify(INITIAL_DAILY_EXPENSES));
+  return INITIAL_DAILY_EXPENSES;
+}
+
+function setLocalExpenses(expenses: DailyExpense[]): void {
+  localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+}
 
 // Local storage helpers
 function getLocalProducts(): Product[] {
@@ -1382,6 +1432,96 @@ export class DataService {
     };
   }
 
+  // --- DAILY EXPENSES MANAGEMENT (দৈনিক খরচ ম্যানেজমেন্ট) ---
+  public static async getDailyExpenses(): Promise<DailyExpense[]> {
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        const q = query(collection(db, 'expenses'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const cloud = snap.docs.map(d => d.data() as DailyExpense);
+          setLocalExpenses(cloud);
+          return cloud;
+        }
+      } catch (err) {
+        handleFirestoreNotice('fetch daily expenses', err);
+      }
+    }
+    return getLocalExpenses();
+  }
+
+  public static async saveDailyExpense(
+    data: Omit<DailyExpense, 'id' | 'createdAt'>
+  ): Promise<DailyExpense> {
+    const newExpense: DailyExpense = {
+      ...data,
+      id: `exp-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        await setDoc(doc(db, 'expenses', newExpense.id), cleanForFirestore(newExpense));
+      } catch (err) {
+        handleFirestoreNotice('save daily expense', err);
+      }
+    }
+
+    const current = getLocalExpenses();
+    const updated = [newExpense, ...current];
+    setLocalExpenses(updated);
+    return newExpense;
+  }
+
+  public static async updateDailyExpense(expense: DailyExpense): Promise<DailyExpense> {
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        await updateDoc(doc(db, 'expenses', expense.id), cleanForFirestore(expense));
+      } catch (err) {
+        handleFirestoreNotice('update daily expense', err);
+      }
+    }
+
+    const current = getLocalExpenses();
+    const updated = current.map(e => e.id === expense.id ? expense : e);
+    setLocalExpenses(updated);
+    return expense;
+  }
+
+  public static async deleteDailyExpense(id: string): Promise<boolean> {
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        await deleteDoc(doc(db, 'expenses', id));
+      } catch (err) {
+        handleFirestoreNotice('delete daily expense', err);
+      }
+    }
+
+    const current = getLocalExpenses();
+    const updated = current.filter(e => e.id !== id);
+    setLocalExpenses(updated);
+    return true;
+  }
+
+  public static calculateExpenseAllocation(expenses: DailyExpense[], products: Product[]): {
+    totalExpenses: number;
+    totalStockPieces: number;
+    perPieceExpense: number;
+  } {
+    const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const totalStockPieces = products.reduce((sum, p) => sum + Math.max(0, Number(p.currentStock) || 0), 0);
+    const perPieceExpense = totalStockPieces > 0 ? (totalExpenses / totalStockPieces) : 0;
+    return {
+      totalExpenses,
+      totalStockPieces,
+      perPieceExpense,
+    };
+  }
+
   // Reset to demo data
   public static resetToDemoData(): void {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(INITIAL_PRODUCTS));
@@ -1391,6 +1531,7 @@ export class DataService {
     localStorage.setItem(VIDEOS_KEY, JSON.stringify(INITIAL_VIDEOS));
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(INITIAL_CUSTOMERS));
     localStorage.setItem(RETURNS_KEY, JSON.stringify(INITIAL_RETURNS));
+    localStorage.setItem(EXPENSES_KEY, JSON.stringify(INITIAL_DAILY_EXPENSES));
   }
 
   // Clear all data
@@ -1403,6 +1544,7 @@ export class DataService {
     localStorage.removeItem(CUSTOMERS_KEY);
     localStorage.removeItem(RETURNS_KEY);
     localStorage.removeItem(SETTLEMENTS_KEY);
+    localStorage.removeItem(EXPENSES_KEY);
     window.location.reload();
   }
 }

@@ -249,6 +249,7 @@ export type PageId =
   | 'settlements'
   | 'returns'
   | 'customers'
+  | 'expenses'
   | 'reports'
   | 'settings'
   | 'login';
@@ -256,4 +257,22 @@ export type PageId =
 export type GlassTheme = 'emerald' | 'sapphire' | 'amethyst' | 'amber' | 'cyber-ice' | 'ruby-rose';
 
 export type GlassFrostMode = 'crisp' | 'frosted' | 'deep';
+
+export interface DailyExpense {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  date: string; // YYYY-MM-DD
+  notes?: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
+export interface PerPieceExpenseItem {
+  id: string;
+  name: string;
+  amountPerPiece: number;
+  isActive: boolean;
+}
 

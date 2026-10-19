@@ -27,6 +27,7 @@ interface SidebarProps {
   onLogout: () => void;
   lowStockCount: number;
   glassTheme?: GlassTheme;
+  isExpanded?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({

@@ -73,7 +73,7 @@ export interface UserSession {
   id: string;
   name: string;
   email: string;
-  role: 'Super Admin' | 'Store Manager' | 'Sales Executive';
+  role: 'Super Admin' | 'Admin' | 'User' | 'Store Manager' | 'Sales Executive';
   avatar?: string;
   branch: string;
   isAuthenticated: boolean;

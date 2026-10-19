@@ -22,8 +22,15 @@ let isSigningIn = false;
 export function getFirebaseInstances() {
   if (!firebaseApp) {
     const config = getStoredFirebaseConfig();
-    if (!config || !config.isConfigured) return { db: null, auth: null, storage: null, isConfigured: false };
-    firebaseApp = initializeApp(config as any);
+    if (!config || !config.isConfigured || !config.apiKey || !config.projectId) {
+      return { db: null, auth: null, storage: null, isConfigured: false };
+    }
+    try {
+      firebaseApp = initializeApp(config as any);
+    } catch (e) {
+      console.warn('Firebase initialization skipped:', e);
+      return { db: null, auth: null, storage: null, isConfigured: false };
+    }
   }
   const auth = getAuth(firebaseApp);
   if (auth && !auth.currentUser && !isSigningIn) {

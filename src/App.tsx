@@ -59,12 +59,12 @@ export default function App() {
   const [settlements, setSettlements] = useState<SettlementRecord[]>([]);
 
   const [user, setUser] = useState<UserSession>({
-    id: 'usr-admin-01',
-    name: 'Super Admin',
-    email: 'nahardorjibari@gmail.com',
+    id: '',
+    name: '',
+    email: '',
     role: 'Super Admin',
-    branch: 'Dhaka Flagship Showroom',
-    isAuthenticated: true,
+    branch: 'Hemayetpur Factory Showroom',
+    isAuthenticated: false,
   });
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -173,19 +173,39 @@ export default function App() {
     (p) => p.currentStock <= p.lowStockThreshold && p.currentStock > 0
   ).length;
 
+  const handleNavigate = (page: PageId) => {
+    if ((page === 'new-sale' || page === 'stock') && user.role !== 'Super Admin') {
+      alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot make new sales or stock entries. Only Super Admin can perform entries.');
+      return;
+    }
+    setCurrentPage(page);
+  };
+
   // Actions
   const handleOpenAddProduct = () => {
+    if (user.role !== 'Super Admin') {
+      alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot add products. Only Super Admin can perform entries.');
+      return;
+    }
     setProductToEdit(null);
     setIsProductModalOpen(true);
   };
 
   const handleEditProduct = (prod: Product) => {
+    if (user.role !== 'Super Admin') {
+      alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot edit products.');
+      return;
+    }
     setProductToEdit(prod);
     setIsProductModalOpen(true);
     setProductForDetailDrawer(null);
   };
 
   const handleDeleteProduct = async (prod: Product) => {
+    if (user.role !== 'Super Admin') {
+      alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot delete products.');
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete ${prod.productCode} (${prod.name})?`)) {
       await DataService.deleteProduct(prod.id);
       loadData();
@@ -196,8 +216,12 @@ export default function App() {
   };
 
   const handleAddStockForProduct = (prod: Product) => {
+    if (user.role !== 'Super Admin') {
+      alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot modify stock.');
+      return;
+    }
     setStockSelectedProductId(prod.id);
-    setCurrentPage('stock');
+    handleNavigate('stock');
     setProductForDetailDrawer(null);
   };
 
@@ -325,7 +349,7 @@ export default function App() {
         <div className="h-full overflow-y-auto">
           <Sidebar
             currentPage={currentPage}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             brandSettings={brandSettings}
             user={user}
             onLogout={handleLogout}
@@ -350,9 +374,9 @@ export default function App() {
           brandSettings={brandSettings}
           onOpenMobileMenu={() => setIsMobileDrawerOpen(true)}
           onQuickSearchCode={handleQuickSearchCode}
-          onOpenNewSale={() => setCurrentPage('new-sale')}
+          onOpenNewSale={() => handleNavigate('new-sale')}
           onOpenAddProduct={handleOpenAddProduct}
-          onOpenAddStock={() => setCurrentPage('stock')}
+          onOpenAddStock={() => handleNavigate('stock')}
           onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}
           glassTheme={glassTheme}
           onThemeChange={handleThemeChange}
@@ -371,7 +395,7 @@ export default function App() {
                 movements={movements}
                 brandSettings={brandSettings}
                 orders={orders}
-                onNavigate={setCurrentPage}
+                onNavigate={handleNavigate}
                 onOpenAddProduct={handleOpenAddProduct}
                 onOpenAddStockForProduct={handleAddStockForProduct}
                 onViewProduct={setProductForDetailDrawer}
@@ -384,7 +408,7 @@ export default function App() {
                 customers={customers}
                 videos={videos}
                 onOrderCreated={handleOrderCreated}
-                onNavigate={setCurrentPage}
+                onNavigate={handleNavigate}
                 initialProductCodeToSell={sellProductCode}
               />
             )}
@@ -397,8 +421,12 @@ export default function App() {
                 onViewProduct={setProductForDetailDrawer}
                 onAddStockForProduct={handleAddStockForProduct}
                 onSellProduct={(prod) => {
+                  if (user.role !== 'Super Admin') {
+                    alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot make new sales.');
+                    return;
+                  }
                   setSellProductCode(prod.productCode);
-                  setCurrentPage('new-sale');
+                  handleNavigate('new-sale');
                 }}
                 onDeleteProduct={handleDeleteProduct}
                 searchQuery={productsSearchQuery}
@@ -418,7 +446,7 @@ export default function App() {
               <SalesHistoryView
                 orders={orders}
                 products={products}
-                onNavigateToNewSale={() => setCurrentPage('new-sale')}
+                onNavigateToNewSale={() => handleNavigate('new-sale')}
                 onOpenInvoice={handleOpenInvoiceModal}
                 onCancelOrder={handleCancelOrder}
                 onUpdateStatus={handleUpdateOrderStatus}

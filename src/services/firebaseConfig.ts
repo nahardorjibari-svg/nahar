@@ -7,13 +7,13 @@ import { FirebaseConnectionConfig } from '../types';
 const STORAGE_KEY = 'nahar_firebase_custom_config';
 
 export const DEFAULT_FIREBASE_CONFIG: FirebaseConnectionConfig = {
-  apiKey: "AIzaSyC8tKzuhzHE21EFnmYEy1cSmu7cFvMZLAI",
-  authDomain: "nahardorjibari-98a7d.firebaseapp.com",
-  projectId: "nahardorjibari-98a7d",
-  storageBucket: "nahardorjibari-98a7d.firebasestorage.app",
-  messagingSenderId: "692580279018",
-  appId: "1:692580279018:web:397f30063d099cf94c6d93",
-  isConfigured: true,
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  isConfigured: false,
 };
 
 let firebaseApp: FirebaseApp | null = null;

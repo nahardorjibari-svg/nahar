@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Shield, ArrowRight, Sparkles, Upload, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, Shield, ArrowRight, Sparkles, Upload, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { BrandSettings, UserSession } from '../../types';
 import { DataService } from '../../services/dataService';
 
@@ -15,9 +15,10 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
   onBrandSettingsUpdated,
 }) => {
   const [selectedRole, setSelectedRole] = useState<'Super Admin' | 'Admin' | 'User'>('Super Admin');
-  const [userId, setUserId] = useState('admin@nahardorjibari.com');
-  const [password, setPassword] = useState('••••••••');
+  const [userId, setUserId] = useState('superadmin@nahardorjibari.com');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,19 +46,31 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    // Password validation: Super Admin = 7862, Admin/User = 1234
+    if (selectedRole === 'Super Admin' && password !== '7862') {
+      setErrorMessage('ভুল পাসওয়ার্ড! Super Admin এর জন্য সঠিক পাসওয়ার্ড দিন (7862)।');
+      return;
+    }
+    if ((selectedRole === 'Admin' || selectedRole === 'User') && password !== '1234') {
+      setErrorMessage('ভুল পাসওয়ার্ড! Admin বা User এর জন্য সঠিক পাসওয়ার্ড দিন (1234)।');
+      return;
+    }
+
     setIsLoading(true);
 
     setTimeout(() => {
       onLoginSuccess({
-        id: `usr-${selectedRole.toLowerCase().replace(' ', '-')}-01`,
-        name: selectedRole === 'Super Admin' ? 'Super Admin (Md Johurul Islam)' : selectedRole === 'Admin' ? 'Store Admin' : 'Staff User',
+        id: `usr-${selectedRole.toLowerCase()}-01`,
+        name: selectedRole === 'Super Admin' ? 'Super Admin (Md Johurul Islam)' : selectedRole === 'Admin' ? 'Admin (View Only)' : 'User (View Only)',
         email: userId.trim(),
-        role: selectedRole === 'Super Admin' ? 'Super Admin' : selectedRole === 'Admin' ? 'Store Manager' : 'Sales Executive',
+        role: selectedRole,
         branch: brandSettings.branch || 'Hemayetpur Factory Showroom',
         isAuthenticated: true,
       });
       setIsLoading(false);
-    }, 500);
+    }, 400);
   };
 
   return (
@@ -151,9 +164,10 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
                 type="button"
                 onClick={() => {
                   setSelectedRole(role);
-                  if (role === 'Super Admin') setUserId('admin@nahardorjibari.com');
-                  else if (role === 'Admin') setUserId('manager@nahardorjibari.com');
-                  else setUserId('staff@nahardorjibari.com');
+                  setErrorMessage(null);
+                  if (role === 'Super Admin') setUserId('superadmin@nahardorjibari.com');
+                  else if (role === 'Admin') setUserId('admin@nahardorjibari.com');
+                  else setUserId('user@nahardorjibari.com');
                 }}
                 className={`py-2 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                   selectedRole === role
@@ -165,6 +179,13 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               </button>
             ))}
           </div>
+
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -192,11 +213,14 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder={selectedRole === 'Super Admin' ? 'Enter 7862' : 'Enter 1234'}
                   required
                   className="w-full pl-10 pr-3 py-2.5 glass-input rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-emerald-400 font-mono-numbers text-xs"
                 />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">Configured securely by Admin panel credentials.</p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {selectedRole === 'Super Admin' ? 'Super Admin Password: 7862' : 'Admin & User Password: 1234 (View Only)'}
+              </p>
             </div>
 
             <button
@@ -204,7 +228,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
               disabled={isLoading}
               className="w-full py-3 bg-gradient-to-r from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 text-slate-950 font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(16,185,129,0.4)] border border-emerald-300/40 text-xs"
             >
-              <span>{isLoading ? 'Authenticating...' : `Sign In as ${selectedRole}`}</span>
+              <span>{isLoading ? 'Verifying...' : `Sign In as ${selectedRole}`}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -212,7 +236,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
           {/* Footer Security Note */}
           <div className="mt-5 pt-4 border-t border-white/10 text-center text-[10px] text-slate-400 flex items-center justify-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Secured & locked logo session for Rupkatha Apparels Ltd.</span>
+            <span>Rupkatha Apparels Ltd. Secure Access Portal</span>
           </div>
         </div>
       </div>

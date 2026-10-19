@@ -51,14 +51,24 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({
 
   const handleDownloadPDF = async () => {
     if (invoiceRef.current) {
-      const canvas = await html2canvas(invoiceRef.current);
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${order.invoiceNumber}.pdf`);
+      try {
+        const canvas = await html2canvas(invoiceRef.current, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`${order.invoiceNumber || 'invoice'}.pdf`);
+      } catch (err) {
+        console.error('PDF download error:', err);
+        alert('Could not generate PDF directly. Please use the Print button to print or save as PDF.');
+      }
     }
   };
 

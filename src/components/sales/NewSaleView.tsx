@@ -56,26 +56,14 @@ interface DraftOrderItem {
 }
 
 const BANGLADESH_DISTRICTS = [
-  'Dhaka',
-  'Chittagong',
-  'Sylhet',
-  'Rajshahi',
-  'Khulna',
-  'Barisal',
-  'Rangpur',
-  'Mymensingh',
-  'Gazipur',
-  'Narayanganj',
-  'Comilla',
-  'Bogra',
-  'Cox\'s Bazar',
-  'Jessore',
-  'Faridpur',
-  'Tangail',
-  'Kushtia',
-  'Pabna',
-  'Dinajpur',
-  'Noakhali',
+  'Dhaka', 'Faridpur', 'Gazipur', 'Gopalganj', 'Kishoreganj', 'Madaripur', 'Manikganj', 'Munshiganj', 'Narayanganj', 'Narsingdi', 'Rajbari', 'Shariatpur', 'Tangail',
+  'Chittagong', 'Bandarban', 'Brahmanbaria', 'Chandpur', "Cox's Bazar", 'Feni', 'Khagrachhari', 'Lakshmipur', 'Noakhali', 'Rangamati',
+  'Sylhet', 'Habiganj', 'Moulvibazar', 'Sunamganj',
+  'Rajshahi', 'Bogra', 'Chapainawabganj', 'Joypurhat', 'Naogaon', 'Natore', 'Pabna', 'Sirajganj',
+  'Khulna', 'Bagerhat', 'Chuadanga', 'Jashore', 'Jhenaidah', 'Kushtia', 'Magura', 'Meherpur', 'Narail', 'Satkhira',
+  'Barisal', 'Barguna', 'Bhola', 'Jhalokati', 'Patuakhali', 'Pirojpur',
+  'Rangpur', 'Dinajpur', 'Gaibandha', 'Kurigram', 'Lalmonirhat', 'Nilphamari', 'Panchagarh', 'Thakurgaon',
+  'Mymensingh', 'Jamalpur', 'Netrokona', 'Sherpur',
   'Other District',
 ];
 
@@ -107,6 +95,60 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerDistrict, setCustomerDistrict] = useState('Dhaka');
+  const [rawPasteText, setRawPasteText] = useState('');
+
+  const handleSmartPasteParse = () => {
+    if (!rawPasteText.trim()) return;
+    const text = rawPasteText;
+
+    // Extract Phone (Bangladesh 11 digit 01... or +880...)
+    const phoneMatch = text.match(/(?:\+88)?(01[3-9]\d{8})/);
+    if (phoneMatch) {
+      setCustomerPhone(phoneMatch[1]);
+    }
+
+    // Extract Name
+    const nameMatch = text.match(/(?:Name|নাম)\s*[:\-]\s*([^\n\r,]+)/i);
+    if (nameMatch) {
+      setCustomerName(nameMatch[1].trim());
+    } else {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length > 0) {
+        const cleanName = lines[0].replace(/^(?:name|নাম|customer)\s*[:\-]\s*/i, '');
+        if (cleanName.length > 1 && !cleanName.match(/01\d{9}/)) {
+          setCustomerName(cleanName);
+        }
+      }
+    }
+
+    // Match District among 64 districts
+    let foundDistrict = 'Dhaka';
+    for (const dist of BANGLADESH_DISTRICTS) {
+      const regex = new RegExp(`\\b${dist}\\b`, 'i');
+      if (regex.test(text)) {
+        foundDistrict = dist;
+        break;
+      }
+    }
+    setCustomerDistrict(foundDistrict);
+    const isDhaka = foundDistrict === 'Dhaka';
+    setDeliveryFee(isDhaka ? 70 : 130);
+    setSellerCourierCost(isDhaka ? 70 : 130);
+
+    // Extract Address
+    let addressClean = text;
+    if (nameMatch && nameMatch[0]) addressClean = addressClean.replace(nameMatch[0], '');
+    if (phoneMatch && phoneMatch[0]) addressClean = addressClean.replace(phoneMatch[0], '');
+    addressClean = addressClean.replace(/(?:address|ঠিকানা|phone|মোবাইল|number|name|নাম)\s*[:\-]/gi, '');
+    const formattedAddress = addressClean.split('\n').map(l => l.trim()).filter(Boolean).join(', ');
+    if (formattedAddress.length > 3) {
+      setCustomerAddress(formattedAddress);
+    } else {
+      setCustomerAddress(text.trim());
+    }
+
+    setRawPasteText('');
+  };
 
   // Video / Campaign Attribution
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
@@ -732,6 +774,32 @@ export const NewSaleView: React.FC<NewSaleViewProps> = ({
                   Clear Selection
                 </button>
               )}
+            </div>
+
+            {/* AI Smart Paste Box */}
+            <div className="p-3 bg-emerald-950/40 border border-emerald-500/35 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1">
+                  ✨ Smart AI Paste Box (এক ক্লিকে অটো-ফিল)
+                </span>
+                <span className="text-[10px] text-slate-400">Paste Name, Number & Address</span>
+              </div>
+              <div className="flex gap-2">
+                <textarea
+                  rows={2}
+                  placeholder="Paste e.g. Name-Md Johurul, Number-01925254746, Address..."
+                  value={rawPasteText}
+                  onChange={e => setRawPasteText(e.target.value)}
+                  className="w-full px-2.5 py-1.5 glass-input rounded-lg text-xs text-white"
+                />
+                <button
+                  type="button"
+                  onClick={handleSmartPasteParse}
+                  className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs transition-colors shrink-0 cursor-pointer"
+                >
+                  Auto-Fill
+                </button>
+              </div>
             </div>
 
             {/* Customer Search Auto-fill */}

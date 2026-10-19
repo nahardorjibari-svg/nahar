@@ -153,20 +153,31 @@
   transform: translateY(-3px) scale(1.005);
 }
 
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important; /* slate-900 */
+  border-color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #64748b !important; /* slate-500 */
+  opacity: 1;
+}
+
 .glass-input {
-  background: var(--bg-glass-input);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: #ffffff !important;
+  color: #0f172a !important;
   border: 1px solid var(--border-glass);
-  color: #f8fafc;
   transition: all 0.2s ease;
 }
 
 .glass-input:focus {
   outline: none;
   border-color: var(--theme-primary);
-  box-shadow: 0 0 18px -2px var(--theme-glow), inset 0 1px 2px 0 rgba(255, 255, 255, 0.15);
-  background: rgba(14, 24, 46, 0.9);
+  box-shadow: 0 0 18px -2px var(--theme-glow);
+  background: #ffffff !important;
+  color: #0f172a !important;
 }
 
 /* Dynamic Ambient Glass Lighting Layers */
@@ -298,4 +309,22 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.35);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #invoice-printable-sheet, #invoice-printable-sheet * {
+    visibility: visible;
+  }
+  #invoice-printable-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+    box-shadow: none;
+  }
 }

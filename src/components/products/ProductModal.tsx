@@ -246,8 +246,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           {/* Section: Code & Name */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block font-semibold text-slate-800 mb-1">
-                Product Code <span className="text-rose-500">*</span>
+              <label className="block font-semibold text-slate-200 mb-1">
+                Product Code <span className="text-rose-400">*</span>
               </label>
               <input
                 type="text"
@@ -262,7 +262,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 }`}
               />
               {codeError ? (
-                <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">
+                <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1 font-medium">
                   <AlertCircle className="w-3 h-3 shrink-0" />
                   {codeError}
                 </p>
@@ -272,8 +272,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-800 mb-1">
-                Product Name <span className="text-rose-500">*</span>
+              <label className="block font-semibold text-slate-200 mb-1">
+                Product Name <span className="text-rose-400">*</span>
               </label>
               <input
                 type="text"
@@ -289,7 +289,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           {/* Section: Category, Color, Size */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block font-semibold text-slate-800 mb-1">Category</label>
+              <label className="block font-semibold text-slate-200 mb-1">Category</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -314,7 +314,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-800 mb-1">Color</label>
+              <label className="block font-semibold text-slate-200 mb-1">Color</label>
               <input
                 type="text"
                 placeholder="e.g. Royal Blue, Emerald Green"
@@ -325,7 +325,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-800 mb-1">Size / Stitching</label>
+              <label className="block font-semibold text-slate-200 mb-1">Size / Stitching</label>
               <select
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
@@ -348,8 +348,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
-                <label className="block font-semibold text-slate-800 mb-1">
-                  Purchase Cost (৳) <span className="text-rose-500">*</span>
+                <label className="block font-semibold text-slate-200 mb-1">
+                  Purchase Cost (৳) <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">৳</span>
@@ -363,15 +363,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs font-mono-numbers font-medium"
                   />
                 </div>
-                <span className="text-[11px] text-slate-500">Cost per unit</span>
+                <span className="text-[11px] text-slate-400">Cost per unit</span>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block font-semibold text-slate-800">
+                  <label className="block font-semibold text-slate-200">
                     Default Selling Price (৳)
                   </label>
-                  <span className="text-[10px] text-amber-600 font-medium">Optional</span>
+                  <span className="text-[10px] text-amber-400 font-medium">Optional</span>
                 </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">৳</span>
@@ -384,13 +384,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs font-mono-numbers"
                   />
                 </div>
-                <span className="text-[11px] text-slate-500">Can vary per invoice/wholesale</span>
+                <span className="text-[11px] text-slate-400">Can vary per invoice/wholesale</span>
               </div>
 
               {!isEditing && (
                 <div>
-                  <label className="block font-semibold text-slate-800 mb-1">
-                    Initial Stock (pcs) <span className="text-rose-500">*</span>
+                  <label className="block font-semibold text-slate-200 mb-1">
+                    Initial Stock (pcs) <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="number"
@@ -401,12 +401,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     required
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs font-mono-numbers font-semibold"
                   />
-                  <span className="text-[11px] text-slate-500">Initial units inward</span>
+                  <span className="text-[11px] text-slate-400">Initial units inward</span>
                 </div>
               )}
 
               <div>
-                <label className="block font-semibold text-slate-800 mb-1">Low-Stock Alert</label>
+                <label className="block font-semibold text-slate-200 mb-1">Low-Stock Alert</label>
                 <input
                   type="number"
                   min="1"
@@ -415,15 +415,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   onChange={(e) => setLowStockThreshold(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 text-xs font-mono-numbers"
                 />
-                <span className="text-[11px] text-slate-500">Alert threshold pieces</span>
+                <span className="text-[11px] text-slate-400">Alert threshold pieces</span>
               </div>
             </div>
 
             {/* Price margin preview if both are provided */}
             {purchaseCost !== '' && defaultSellingPrice !== '' && Number(defaultSellingPrice) > Number(purchaseCost) && (
-              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
+              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-300">
                 <span>Estimated Gross Margin per piece:</span>
-                <span className="font-semibold text-emerald-700 font-mono-numbers">
+                <span className="font-semibold text-emerald-400 font-mono-numbers">
                   {formatBDT(Number(defaultSellingPrice) - Number(purchaseCost))} (
                   {Math.round(((Number(defaultSellingPrice) - Number(purchaseCost)) / Number(purchaseCost)) * 100)}%
                   markup)
@@ -435,8 +435,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           {/* Section: Multiple Images */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="font-semibold text-slate-800 flex items-center gap-1.5">
-                <Image className="w-4 h-4 text-slate-500" />
+              <label className="font-semibold text-slate-200 flex items-center gap-1.5">
+                <Image className="w-4 h-4 text-slate-400" />
                 <span>Product Images ({images.length})</span>
               </label>
               <label className="text-xs text-amber-700 hover:text-amber-800 font-medium flex items-center gap-1 cursor-pointer">
@@ -525,7 +525,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
           {/* Section: Notes & Fabric Specifications */}
           <div>
-            <label className="block font-semibold text-slate-800 mb-1">
+            <label className="block font-semibold text-slate-200 mb-1">
               Fabric Composition & Piece Notes
             </label>
             <textarea

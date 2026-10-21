@@ -317,8 +317,8 @@ input[type="password"] {
 
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 8mm 6mm;
+    size: auto;
+    margin: 0;
   }
 
   html, body {
@@ -333,8 +333,10 @@ input[type="password"] {
     print-color-adjust: exact !important;
   }
 
-  /* When printing stickers, hide #root completely to guarantee stickers start at the exact top of the A4 page */
+  /* When printing stickers, hide #root completely to guarantee stickers start at the exact top of the page */
   body.printing-stickers-active #root,
+  body.printing-thermal-active #root,
+  body.printing-a4-active #root,
   body:has(#product-sticker-print-portal) #root {
     display: none !important;
   }
@@ -344,13 +346,10 @@ input[type="password"] {
     display: block !important;
     visibility: visible !important;
     position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    page-break-after: avoid;
   }
 
   #product-sticker-print-portal * {
@@ -359,8 +358,19 @@ input[type="password"] {
     print-color-adjust: exact !important;
   }
 
+  /* Thermal roll sticker: individual label page breaks */
+  .thermal-sticker-page {
+    display: block !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin: 0 auto !important;
+    padding: 1mm !important;
+  }
+
   /* For invoice printing fallback when sticker portal is inactive */
-  body:not(.printing-stickers-active) body * {
+  body:not(.printing-stickers-active):not(.printing-thermal-active) body * {
     visibility: hidden;
   }
 

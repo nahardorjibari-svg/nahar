@@ -9,15 +9,15 @@ import {
   Scissors,
   Layers,
   Sparkles,
-  CheckCircle2,
   Phone,
-  MapPin,
   Eye,
   Sliders,
   FileText,
   Copy,
-  ExternalLink,
   Edit3,
+  CheckCircle,
+  HelpCircle,
+  Check,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
@@ -34,7 +34,8 @@ interface ProductStickerModalProps {
   onSellProduct?: (product: Product) => void;
 }
 
-export type StickerFormat = 'sheet-a4' | 'garment-tag' | 'thermal-compact';
+export type StickerFormat = 'thermal-compact' | 'sheet-a4' | 'garment-tag';
+export type ThermalSize = '50x30' | '50x35' | '40x30' | '58mm' | '80mm';
 
 export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
   isOpen,
@@ -46,18 +47,26 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
 }) => {
   if (!isOpen || !product) return null;
 
-  // Format: default to 'sheet-a4' as requested for A4 printers (HP LaserJet, etc.)
-  const [format, setFormat] = useState<StickerFormat>('sheet-a4');
+  // Format selection
+  const [format, setFormat] = useState<StickerFormat>('thermal-compact');
+  const [thermalSize, setThermalSize] = useState<ThermalSize>('50x30');
+
+  // Selling Price
   const [sellingPrice, setSellingPrice] = useState<number | ''>(
     product.defaultSellingPrice !== null && product.defaultSellingPrice !== undefined
       ? product.defaultSellingPrice
       : 1950
   );
 
-  // Preset & Custom count: 2, 6, 12, 18, 24, stock, or custom
+  // Stock count
   const stockCount = Math.max(1, product.currentStock || 2);
+
+  // A4 sheet count & Thermal copies count
   const [sheetCount, setSheetCount] = useState<number>(
     product.currentStock && product.currentStock > 0 ? product.currentStock : 2
+  );
+  const [thermalCopies, setThermalCopies] = useState<number>(
+    product.currentStock && product.currentStock > 0 ? product.currentStock : 1
   );
   const [customCountInput, setCustomCountInput] = useState<string>('');
 
@@ -65,10 +74,11 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDownloadingImage, setIsDownloadingImage] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showThermalGuide, setShowThermalGuide] = useState(false);
 
   const printableRef = useRef<HTMLDivElement>(null);
 
-  // Generate full scan URL that loads live product card in app
+  // Scan URL that opens the live product card inside app
   const scanUrl = `${window.location.origin}${window.location.pathname}?scan_product=${encodeURIComponent(
     product.productCode
   )}`;
@@ -96,7 +106,6 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
     };
   }, [scanUrl, product.productCode]);
 
-  // Sync selling price if product changes
   useEffect(() => {
     if (product.defaultSellingPrice !== null && product.defaultSellingPrice !== undefined) {
       setSellingPrice(product.defaultSellingPrice);
@@ -107,16 +116,23 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
   useEffect(() => {
     const handleAfterPrint = () => {
       document.body.classList.remove('printing-stickers-active');
+      document.body.classList.remove('printing-thermal-active');
+      document.body.classList.remove('printing-a4-active');
     };
     window.addEventListener('afterprint', handleAfterPrint);
     return () => {
-      document.body.classList.remove('printing-stickers-active');
+      handleAfterPrint();
       window.removeEventListener('afterprint', handleAfterPrint);
     };
   }, []);
 
-  // Print Action: targets the portal directly at top of A4 page
+  // Print Action
   const handlePrint = () => {
+    if (format === 'thermal-compact') {
+      document.body.classList.add('printing-thermal-active');
+    } else {
+      document.body.classList.add('printing-a4-active');
+    }
     document.body.classList.add('printing-stickers-active');
     setTimeout(() => {
       window.print();
@@ -134,7 +150,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
         logging: false,
       });
       const link = document.createElement('a');
-      link.download = `nahar-sticker-a4-${product.productCode.toLowerCase()}.png`;
+      link.download = `nahar-sticker-${format}-${product.productCode.toLowerCase()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (err) {
@@ -157,19 +173,26 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      // Render from top margin of 8mm
-      const imgWidth = pageWidth - 16;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'JPEG', 8, 8, imgWidth, imgHeight);
-
-      pdf.save(`nahar-stickers-a4-${product.productCode}.pdf`);
+      if (format === 'thermal-compact') {
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: [50, 30],
+        });
+        pdf.addImage(imgData, 'JPEG', 1, 1, 48, 28);
+        pdf.save(`nahar-thermal-${product.productCode}.pdf`);
+      } else {
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+        });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const imgWidth = pageWidth - 16;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, 'JPEG', 8, 8, imgWidth, imgHeight);
+        pdf.save(`nahar-stickers-a4-${product.productCode}.pdf`);
+      }
     } catch (err) {
       console.error('Error generating PDF:', err);
       alert('PDF তৈরি করতে সমস্যা হয়েছে।');
@@ -194,23 +217,34 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
     brandSettings.address || 'Raj place, Rishipara, Padma mor, Hemayetpur, Dhaka';
   const brandDisplayPhone = brandSettings.phone || '+880 1354-234702';
 
-  // Helper to change count from preset buttons
-  const handleSelectPreset = (count: number) => {
-    setSheetCount(count);
+  // Handle Preset count click
+  const handleSelectCount = (count: number) => {
+    if (format === 'thermal-compact') {
+      setThermalCopies(count);
+    } else {
+      setSheetCount(count);
+    }
     setCustomCountInput('');
   };
 
-  // Helper to handle custom input typing
+  // Handle Custom count typing
   const handleCustomCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     setCustomCountInput(raw);
     const parsed = parseInt(raw, 10);
     if (!isNaN(parsed) && parsed > 0) {
-      setSheetCount(Math.min(100, Math.max(1, parsed)));
+      const clamped = Math.min(100, Math.max(1, parsed));
+      if (format === 'thermal-compact') {
+        setThermalCopies(clamped);
+      } else {
+        setSheetCount(clamped);
+      }
     }
   };
 
-  // Sticker Grid Column Layout based on count
+  const activeCopies = format === 'thermal-compact' ? thermalCopies : sheetCount;
+
+  // Grid layout for A4 sheet
   const getGridColsClass = () => {
     if (sheetCount <= 2) return 'grid-cols-2';
     if (sheetCount <= 8) return 'grid-cols-2';
@@ -218,8 +252,71 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
     return 'grid-cols-3 sm:grid-cols-4';
   };
 
-  // Reusable Single Sticker Component designed for High-Contrast Black & White & Color printing
-  const renderStickerItem = (index: number) => {
+  // 1. THERMAL STICKER COMPONENT (50x30mm, 50x35mm, 58mm, 80mm)
+  const renderThermalSticker = (keyIndex: number = 0) => {
+    return (
+      <div
+        key={keyIndex}
+        className="thermal-sticker-page bg-white text-black border-2 border-black rounded-sm flex flex-col justify-between overflow-hidden"
+        style={{
+          width: thermalSize === '50x35' ? '188px' : thermalSize === '58mm' ? '210px' : thermalSize === '80mm' ? '290px' : '185px',
+          height: thermalSize === '50x35' ? '132px' : thermalSize === '58mm' ? '140px' : thermalSize === '80mm' ? '170px' : '114px',
+          padding: '3px 4px',
+          boxSizing: 'border-box',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          pageBreakAfter: 'always',
+          breakAfter: 'page',
+        }}
+      >
+        {/* Thermal Header */}
+        <div className="flex items-center justify-between border-b border-black pb-0.5 leading-none">
+          <span className="font-black text-[10px] text-black tracking-tight truncate max-w-[115px]">
+            {brandDisplayName}
+          </span>
+          <span className="font-mono font-black text-[9px] bg-black text-white px-1 py-0.2 rounded leading-tight">
+            {product.productCode}
+          </span>
+        </div>
+
+        {/* Middle Row: QR Code + Product Info */}
+        <div className="flex items-center gap-1.5 my-0.5">
+          {/* QR Code */}
+          <div className="w-11 h-11 border border-black p-0.5 bg-white shrink-0 flex items-center justify-center">
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR" className="w-full h-full object-contain" />
+            ) : (
+              <div className="w-full h-full bg-slate-300 animate-pulse" />
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 min-w-0 space-y-0.2">
+            <h5 className="font-bold text-[8.5px] text-black leading-tight line-clamp-1">
+              {product.name}
+            </h5>
+            <p className="text-[7.5px] text-slate-800 leading-none truncate">
+              {product.category} · {product.color}
+            </p>
+            <p className="text-[7.5px] text-slate-900 font-semibold leading-none">
+              সাইজ: {product.size}
+            </p>
+            <div className="text-[12px] font-black text-black font-mono leading-none pt-0.5">
+              {sellingPrice !== '' ? formatBDT(Number(sellingPrice)) : '-'}
+            </div>
+          </div>
+        </div>
+
+        {/* Thermal Footer */}
+        <div className="border-t border-black pt-0.5 flex items-center justify-between text-[6.5px] text-black font-bold uppercase leading-none">
+          <span>স্ক্যান করে লাইভ দেখুন</span>
+          <span className="font-mono">{brandDisplayPhone}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // 2. A4 SHEET SINGLE STICKER COMPONENT
+  const renderA4StickerItem = (index: number) => {
     const isTwoLayout = sheetCount <= 2;
     const isMediumLayout = sheetCount > 2 && sheetCount <= 8;
 
@@ -240,7 +337,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
           <span>কাটুন</span>
         </div>
 
-        {/* 1. Header: Brand Info */}
+        {/* Brand Header */}
         <div className="border-b border-slate-800 pb-1 mb-1.5 pr-10">
           <div className="flex items-center gap-1.5">
             {brandSettings.logoUrl ? (
@@ -265,9 +362,8 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
           </div>
         </div>
 
-        {/* 2. Middle Row: Thumbnail Image + Details + QR Code */}
+        {/* Middle Row: Image + Details + QR */}
         <div className="flex items-center gap-2 flex-1 my-0.5">
-          {/* Dress Thumbnail Image */}
           <div
             className={`border border-slate-800 rounded bg-slate-50 overflow-hidden shrink-0 ${
               isTwoLayout ? 'w-14 h-16' : isMediumLayout ? 'w-12 h-14' : 'w-10 h-12'
@@ -281,7 +377,6 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
             />
           </div>
 
-          {/* Product Specs */}
           <div className="flex-1 min-w-0 space-y-0.5">
             <div className="flex items-center gap-1">
               <span className="font-mono font-black text-[9.5px] bg-slate-900 text-white px-1 py-0.2 rounded leading-tight print:border print:border-black">
@@ -299,15 +394,8 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
             <p className="text-[7.5px] text-slate-700 font-medium truncate">
               রং: {product.color} · সাইজ: {product.size}
             </p>
-
-            {isTwoLayout && (
-              <p className="text-[7px] text-slate-500 truncate">
-                কটন লন / প্রিমিয়াম ড্রেস
-              </p>
-            )}
           </div>
 
-          {/* QR Code for Mobile Scanning */}
           <div className="flex flex-col items-center shrink-0">
             <div
               className={`p-0.5 border border-slate-800 rounded bg-white shrink-0 flex items-center justify-center ${
@@ -315,11 +403,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
               }`}
             >
               {qrDataUrl ? (
-                <img
-                  src={qrDataUrl}
-                  alt="QR"
-                  className="w-full h-full object-contain"
-                />
+                <img src={qrDataUrl} alt="QR" className="w-full h-full object-contain" />
               ) : (
                 <div className="w-full h-full bg-slate-200 animate-pulse" />
               )}
@@ -330,7 +414,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
           </div>
         </div>
 
-        {/* 3. Bottom Row: MRP Selling Price in Large High-Visibility Text */}
+        {/* Price Row */}
         <div className="border-t border-slate-800 pt-1 mt-1 flex items-center justify-between">
           <div className="text-[7px] font-bold uppercase tracking-wider text-slate-600">
             বিক্রয় মূল্য (MRP):
@@ -343,10 +427,9 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
     );
   };
 
-  // A4 Printable Sheet Content (Used both in Preview and in Print Portal)
+  // A4 Printable Sheet Content
   const renderA4SheetContent = () => (
     <div className="w-full max-w-[194mm] mx-auto bg-white text-slate-900 font-sans p-1">
-      {/* Top Header of the Printable Sheet (Starts right at the top) */}
       <div className="flex items-center justify-between border-b-2 border-slate-900 pb-1.5 mb-2 text-slate-800">
         <div className="flex items-center gap-1.5">
           <span className="font-black text-[12px]">{brandDisplayName}</span>
@@ -357,18 +440,16 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
         <div className="flex items-center gap-2 text-[9px] font-mono font-bold text-slate-700">
           <span>কোড: {product.productCode}</span>
           <span>·</span>
-          <span>কপি সংখ্যা: {sheetCount} টি</span>
+          <span>কপি: {sheetCount} টি</span>
           <span>·</span>
           <span className="bg-slate-100 px-1 py-0.5 rounded border border-slate-300">A4 সাইজ</span>
         </div>
       </div>
 
-      {/* Grid of Stickers */}
       <div className={`grid gap-2.5 ${getGridColsClass()}`}>
-        {Array.from({ length: sheetCount }).map((_, i) => renderStickerItem(i))}
+        {Array.from({ length: sheetCount }).map((_, i) => renderA4StickerItem(i))}
       </div>
 
-      {/* Paper reuse helper guide if few stickers are printed */}
       {sheetCount <= 6 && (
         <div className="mt-4 pt-2 border-t border-dashed border-slate-300 text-center text-[8px] text-slate-400 print:text-slate-500 font-mono">
           ✂️ এখান থেকে কেটে নিন — নিচের খালি পেজটি পরবর্তীতে অন্য প্রিন্টে ব্যবহার করা যাবে।
@@ -382,57 +463,102 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
       {/* 1. SCREEN MODAL DIALOG */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto">
         <div className="glass-panel-elevated rounded-2xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col border border-white/20 text-slate-100 overflow-hidden">
-          {/* Modal Header */}
-          <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-white/5 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-                <Tag className="w-5 h-5 stroke-[2.5]" />
+          {/* Modal Header with IMMEDIATE PRINT BUTTON */}
+          <div className="px-4 sm:px-5 py-3 border-b border-white/10 flex items-center justify-between bg-white/5 shrink-0 gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)] shrink-0">
+                <Printer className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-white text-base">
-                    স্মার্ট প্রোডাক্ট স্টিকার ও QR কোড প্রিন্ট (A4 পেজ সেটআপ)
+                  <h3 className="font-bold text-white text-sm sm:text-base truncate">
+                    {format === 'thermal-compact'
+                      ? '🖨️ থার্মাল প্রিন্টার স্টিকার প্রিন্ট'
+                      : '📄 A4 পেজ স্টিকার প্রিন্ট'}
                   </h3>
-                  <span className="font-mono-numbers px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-xs">
+                  <span className="font-mono-numbers px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-xs shrink-0">
                     {product.productCode}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">
-                  HP LaserJet ও সাধারণ A4 প্রিন্টারে কোনো ফাঁকা না রেখে একদম উপর থেকে সঠিক সাইজে প্রিন্ট
+                <p className="text-[11px] text-slate-400 truncate">
+                  {format === 'thermal-compact'
+                    ? 'Xprinter, Zebra বা ৫০x৩০মিমি থার্মাল রোলে সরাসরি প্রিন্ট'
+                    : 'HP LaserJet ও সাধারণ A4 প্রিন্টারে সঠিক মার্জিনে প্রিন্ট'}
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 cursor-pointer transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* HEADER FAST ACTION BUTTONS */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="py-2 px-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-300/40 transition-all"
+                title="সরাসরি প্রিন্ট ডায়ালগ খুলুন"
+              >
+                <Printer className="w-4 h-4 stroke-[2.5]" />
+                <span className="font-bold">প্রিন্ট করুন</span>
+              </button>
+
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 cursor-pointer transition-colors"
+                title="বন্ধ করুন"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Modal Body: Left Controls (5 cols), Right Live Preview (7 cols) */}
-          <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-5 p-5">
-            {/* LEFT COLUMN: Controls & Count Preset Buttons */}
+          {/* Modal Body: Left Controls, Right Preview */}
+          <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 sm:p-5">
+            {/* LEFT COLUMN: Controls */}
             <div className="lg:col-span-5 space-y-4">
-              {/* Format Selection */}
-              <div className="p-3.5 glass-card rounded-xl border border-white/10 space-y-2.5">
-                <label className="block text-xs font-bold text-slate-200">
-                  প্রিন্ট ফরম্যাট বাছাই করুন:
-                </label>
-                <div className="grid grid-cols-3 gap-2">
+              {/* Format Switcher */}
+              <div className="p-3 glass-card rounded-xl border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200">
+                    প্রিন্টারের ধরন (Printer Type):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowThermalGuide(!showThermalGuide)}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer font-semibold"
+                  >
+                    <HelpCircle className="w-3 h-3" />
+                    <span>থার্মাল প্রিন্টার নিয়ম</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormat('thermal-compact')}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      format === 'thermal-compact'
+                        ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/20 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400'
+                        : 'bg-black/30 border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <QrCode className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
+                    <span className="text-[11px] font-black block text-emerald-300">
+                      🖨️ থার্মাল প্রিন্টার
+                    </span>
+                    <span className="text-[9px] text-slate-300 block">৫০x৩০মিমি রোল</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setFormat('sheet-a4')}
                     className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                       format === 'sheet-a4'
-                        ? 'bg-emerald-500/25 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                        ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/20 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400'
                         : 'bg-black/30 border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <Layers className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
+                    <Layers className="w-4 h-4 mx-auto mb-1 text-teal-400" />
                     <span className="text-[11px] font-bold block">A4 পেজ শিট</span>
-                    <span className="text-[9px] text-emerald-300 block font-medium">HP / লেজার জেট</span>
+                    <span className="text-[9px] text-slate-400 block">HP / সাধারণ প্রিন্টার</span>
                   </button>
 
                   <button
@@ -440,33 +566,92 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                     onClick={() => setFormat('garment-tag')}
                     className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                       format === 'garment-tag'
-                        ? 'bg-emerald-500/25 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                        ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/20 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400'
                         : 'bg-black/30 border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <Tag className="w-4 h-4 mx-auto mb-1 text-teal-400" />
+                    <Tag className="w-4 h-4 mx-auto mb-1 text-amber-400" />
                     <span className="text-[11px] font-bold block">স্মার্ট হ্যাংট্যাগ</span>
-                    <span className="text-[9px] text-slate-400 block">১টি সিঙ্গেল ট্যাগ</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormat('thermal-compact')}
-                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                      format === 'thermal-compact'
-                        ? 'bg-emerald-500/25 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                        : 'bg-black/30 border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <QrCode className="w-4 h-4 mx-auto mb-1 text-amber-400" />
-                    <span className="text-[11px] font-bold block">থার্মাল লেবেল</span>
-                    <span className="text-[9px] text-slate-400 block">৫০x৩৫ মিমি</span>
+                    <span className="text-[9px] text-slate-400 block">১টি ট্যাগ</span>
                   </button>
                 </div>
               </div>
 
-              {/* Selling Price (বিক্রয় মূল্য / MRP) */}
-              <div className="p-3.5 glass-card rounded-xl border border-white/10 space-y-2.5">
+              {/* Thermal Label Size Selection (When Thermal is Active) */}
+              {format === 'thermal-compact' && (
+                <div className="p-3 glass-card rounded-xl border border-white/10 space-y-2 bg-emerald-500/5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-200">লেবেল পেপার সাইজ:</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold">
+                      {thermalSize === '50x30'
+                        ? '৫০ x ৩০ মিমি (স্ট্যান্ডার্ড)'
+                        : thermalSize === '50x35'
+                        ? '৫০ x ৩৫ মিমি'
+                        : thermalSize === '40x30'
+                        ? '৪০ x ৩০ মিমি'
+                        : thermalSize === '58mm'
+                        ? '৫৮ মিমি রোল'
+                        : '৮০ মিমি রোল'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: '50x30', label: '৫০x৩০ মিমি' },
+                      { id: '50x35', label: '৫০x৩৫ মিমি' },
+                      { id: '58mm', label: '৫৮ মিমি রোল' },
+                      { id: '80mm', label: '৮০ মিমি রোল' },
+                    ].map((sz) => (
+                      <button
+                        key={sz.id}
+                        type="button"
+                        onClick={() => setThermalSize(sz.id as ThermalSize)}
+                        className={`py-1.5 px-1 rounded-lg text-[10px] font-bold cursor-pointer border text-center transition-all ${
+                          thermalSize === sz.id
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm'
+                            : 'bg-black/40 border-white/10 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {sz.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Thermal Print Step-by-Step Guide Modal/Box */}
+              {showThermalGuide && (
+                <div className="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-xl space-y-2 text-xs text-amber-200 animate-in fade-in">
+                  <div className="flex items-center justify-between font-bold text-amber-300">
+                    <span className="flex items-center gap-1.5">
+                      <HelpCircle className="w-4 h-4 text-amber-400" />
+                      <span>থার্মাল প্রিন্টারে প্রিন্ট করার ৩টি সহজ ধাপ:</span>
+                    </span>
+                    <button
+                      onClick={() => setShowThermalGuide(false)}
+                      className="text-amber-400 hover:text-amber-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-200">
+                    <li>
+                      নিচের <strong>'🖨️ থার্মাল প্রিন্টারে প্রিন্ট করুন'</strong> বাটনে চাপ দিন।
+                    </li>
+                    <li>
+                      কম্পিউটারের প্রিন্ট উইন্ডোতে <strong>Destination</strong> থেকে আপনার থার্মাল
+                      প্রিন্টার (যেমন: <em>Xprinter, Zebra, POS-58</em>) সিলেক্ট করুন।
+                    </li>
+                    <li>
+                      <strong>Paper size</strong>-এ <strong>50x30mm</strong> বা <strong>Roll</strong>{' '}
+                      সিলেক্ট করে <strong>Print</strong> দিন। প্রতিটি স্টিকার স্বয়ংক্রিয়ভাবে আলাদা হয়ে
+                      বের হবে!
+                    </li>
+                  </ol>
+                </div>
+              )}
+
+              {/* Selling Price / MRP */}
+              <div className="p-3 glass-card rounded-xl border border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     <Sliders className="w-3.5 h-3.5 text-emerald-400" />
@@ -485,7 +670,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                       setSellingPrice(e.target.value === '' ? '' : Number(e.target.value))
                     }
                     placeholder="যেমন: ১৯৫০"
-                    className="w-full pl-8 pr-3 py-2.5 glass-input rounded-xl text-sm font-bold text-emerald-300 font-mono-numbers focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    className="w-full pl-8 pr-3 py-2 glass-input rounded-xl text-sm font-bold text-emerald-300 font-mono-numbers focus:outline-none focus:ring-1 focus:ring-emerald-400"
                   />
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-400">
@@ -498,28 +683,35 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                 </div>
               </div>
 
-              {/* A4 পেজে স্টিকার সংখ্যা (কপি) — EXACT PRESETS & CUSTOM INPUT */}
-              <div className="p-4 glass-card rounded-xl border border-white/10 space-y-3 bg-emerald-500/5">
+              {/* Copies Selection: Works for both Thermal and A4 */}
+              <div className="p-3.5 glass-card rounded-xl border border-white/10 space-y-2.5 bg-emerald-500/5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-emerald-400" />
-                    <span>A4 পেজে স্টিকার সংখ্যা (কপি):</span>
+                    <span>
+                      {format === 'thermal-compact'
+                        ? 'থার্মাল রোলে স্টিকার সংখ্যা (কপি):'
+                        : 'A4 পেজে স্টিকার সংখ্যা (কপি):'}
+                    </span>
                   </label>
                   <span className="font-mono-numbers px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-black text-xs border border-emerald-500/40">
-                    {sheetCount} টি স্টিকার
+                    {activeCopies} টি কপি
                   </span>
                 </div>
 
-                {/* Preset Buttons: 2, 6, 12, 18, 24, স্টক (২) */}
+                {/* Preset Buttons */}
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  {[2, 6, 12, 18, 24].map((count) => {
-                    const isSelected = sheetCount === count && customCountInput === '';
+                  {(format === 'thermal-compact'
+                    ? [1, 2, 5, 10, 20]
+                    : [2, 6, 12, 18, 24]
+                  ).map((count) => {
+                    const isSelected = activeCopies === count && customCountInput === '';
                     return (
                       <button
                         key={count}
                         type="button"
-                        onClick={() => handleSelectPreset(count)}
-                        className={`py-2 px-1 rounded-lg text-xs font-bold cursor-pointer border text-center transition-all ${
+                        onClick={() => handleSelectCount(count)}
+                        className={`py-1.5 px-1 rounded-lg text-xs font-bold cursor-pointer border text-center transition-all ${
                           isSelected
                             ? 'bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-300 text-slate-950 font-black shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                             : 'bg-black/40 border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
@@ -530,12 +722,12 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                     );
                   })}
 
-                  {/* Stock count button */}
+                  {/* Stock button */}
                   <button
                     type="button"
-                    onClick={() => handleSelectPreset(stockCount)}
-                    className={`py-2 px-1 rounded-lg text-xs font-bold cursor-pointer border text-center transition-all ${
-                      sheetCount === stockCount && customCountInput === ''
+                    onClick={() => handleSelectCount(stockCount)}
+                    className={`py-1.5 px-1 rounded-lg text-xs font-bold cursor-pointer border text-center transition-all ${
+                      activeCopies === stockCount && customCountInput === ''
                         ? 'bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-300 text-slate-950 font-black shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                         : 'bg-emerald-500/10 border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/20'
                     }`}
@@ -545,7 +737,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                   </button>
                 </div>
 
-                {/* Custom count input: "ei castom daw icca moto leke print dite parbo" */}
+                {/* Custom count input */}
                 <div className="pt-2 border-t border-white/10 flex items-center gap-2">
                   <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold shrink-0">
                     <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
@@ -556,7 +748,7 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                       type="number"
                       min="1"
                       max="100"
-                      value={customCountInput !== '' ? customCountInput : sheetCount}
+                      value={customCountInput !== '' ? customCountInput : activeCopies}
                       onChange={handleCustomCountChange}
                       placeholder="ইচ্ছামতো সংখ্যা লিখুন..."
                       className="w-full px-3 py-1.5 glass-input rounded-lg text-xs font-mono font-bold text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-400"
@@ -566,59 +758,28 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                 </div>
               </div>
 
-              {/* Mobile QR Scan & Fast POS Sale Links */}
-              <div className="p-3 bg-black/40 border border-white/10 rounded-xl space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-medium">মোবাইল ক্যামেরা স্ক্যান লিংক:</span>
-                  <button
-                    onClick={handleCopyLink}
-                    className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer font-semibold"
-                  >
-                    <Copy className="w-3 h-3" />
-                    <span>{copiedLink ? 'কপি হয়েছে!' : 'লিংক কপি'}</span>
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-400 truncate font-mono bg-black/50 p-1.5 rounded border border-white/5">
-                  {scanUrl}
-                </p>
-
-                <div className="pt-1 flex gap-2">
-                  {onOpenLiveCard && (
-                    <button
-                      type="button"
-                      onClick={() => onOpenLiveCard(product)}
-                      className="flex-1 py-1.5 px-2 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>লাইভ কার্ড দেখুন</span>
-                    </button>
-                  )}
-
-                  {onSellProduct && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSellProduct(product);
-                        onClose();
-                      }}
-                      className="flex-1 py-1.5 px-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>তাৎক্ষণিক বিক্রি করুন</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Main Print and Download Buttons */}
+              {/* PRIMARY ACTION PRINT BUTTON */}
               <div className="pt-1 space-y-2">
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-xl text-sm flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(16,185,129,0.5)] border border-emerald-300 transition-all"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-xl text-sm flex flex-col items-center justify-center gap-1 cursor-pointer shadow-[0_0_25px_rgba(16,185,129,0.5)] border border-emerald-300 transition-all"
                 >
-                  <Printer className="w-5 h-5 stroke-[2.5]" />
-                  <span>🖨️ A4 পেজে প্রিন্ট করুন (Print A4 Now)</span>
+                  <div className="flex items-center gap-2 text-base">
+                    <Printer className="w-5 h-5 stroke-[2.5]" />
+                    <span>
+                      {format === 'thermal-compact'
+                        ? '🖨️ থার্মাল প্রিন্টারে প্রিন্ট করুন (Print Thermal Now)'
+                        : format === 'sheet-a4'
+                        ? '🖨️ A4 পেজে প্রিন্ট করুন (Print A4 Now)'
+                        : '🖨️ হ্যাংট্যাগ প্রিন্ট করুন (Print Tag)'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-900 font-semibold opacity-90">
+                    {format === 'thermal-compact'
+                      ? `৫০x৩০ মিমি রোলে সরাসরি ${activeCopies} টি স্টিকার প্রিন্ট হবে`
+                      : `A4 পেজের একদম উপর থেকে ${activeCopies} টি স্টিকার প্রিন্ট হবে`}
+                  </span>
                 </button>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -639,8 +800,48 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                     className="py-2.5 px-3 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <FileText className="w-3.5 h-3.5 text-teal-400" />
-                    <span>{isGeneratingPdf ? 'তৈরি হচ্ছে...' : 'PDF ডাউনলোড (A4)'}</span>
+                    <span>{isGeneratingPdf ? 'তৈরি হচ্ছে...' : 'PDF ডাউনলোড'}</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Mobile QR Scan & Fast POS Sale Links */}
+              <div className="p-3 bg-black/40 border border-white/10 rounded-xl space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-medium">মোবাইল স্ক্যান লিংক:</span>
+                  <button
+                    onClick={handleCopyLink}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer font-semibold"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>{copiedLink ? 'কপি হয়েছে!' : 'লিংক কপি'}</span>
+                  </button>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  {onOpenLiveCard && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenLiveCard(product)}
+                      className="flex-1 py-1.5 px-2 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>লাইভ কার্ড</span>
+                    </button>
+                  )}
+
+                  {onSellProduct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSellProduct(product);
+                        onClose();
+                      }}
+                      className="flex-1 py-1.5 px-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>দ্রুত বিক্রি</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -649,40 +850,64 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
             <div className="lg:col-span-7 flex flex-col items-center justify-start p-4 bg-slate-950/80 rounded-2xl border border-white/10 overflow-hidden relative">
               <div className="w-full flex items-center justify-between pb-2 text-xs text-slate-400 border-b border-white/10 mb-2">
                 <div className="flex items-center gap-1.5 font-bold text-slate-200">
-                  <Scissors className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>A4 পেজ লাইভ প্রিভিউ (উপর থেকে সাজানো)</span>
+                  <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>
+                    {format === 'thermal-compact'
+                      ? 'থার্মাল স্টিকার প্রিভিউ (৫০x৩০ মিমি)'
+                      : 'A4 পেজ লাইভ প্রিভিউ (উপর থেকে)'}
+                  </span>
                 </div>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold">
-                  {format === 'sheet-a4'
-                    ? `A4 শিট (${sheetCount} টি স্টিকার)`
-                    : format === 'garment-tag'
-                    ? 'সিঙ্গেল হ্যাংট্যাগ'
-                    : 'থার্মাল লেবেল'}
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold">
+                    {format === 'thermal-compact'
+                      ? `থার্মাল (${thermalCopies} টি স্টিকার)`
+                      : `A4 শিট (${sheetCount} টি স্টিকার)`}
+                  </span>
+
+                  {/* Print Button inside preview header */}
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="py-1 px-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>প্রিন্ট</span>
+                  </button>
+                </div>
               </div>
 
               {/* Scrollable container for preview */}
-              <div className="w-full max-h-[58vh] overflow-y-auto flex flex-col items-center justify-start p-1 bg-slate-900/60 rounded-xl border border-white/5">
-                {/* Visual A4 paper frame */}
+              <div className="w-full max-h-[58vh] overflow-y-auto flex flex-col items-center justify-start p-2 bg-slate-900/60 rounded-xl border border-white/5">
                 <div
                   ref={printableRef}
-                  className="w-full bg-white text-slate-900 rounded shadow-2xl p-3 my-1"
+                  className="bg-white text-slate-900 rounded shadow-2xl p-3 my-1 flex flex-col items-center justify-center"
                   style={{
-                    minHeight: '400px',
                     color: '#000000',
                     backgroundColor: '#ffffff',
+                    minWidth: format === 'thermal-compact' ? '220px' : '100%',
                   }}
                 >
-                  {format === 'sheet-a4' ? (
+                  {format === 'thermal-compact' ? (
+                    <div className="space-y-3 flex flex-col items-center">
+                      <div className="text-[10px] text-slate-500 font-mono pb-1 border-b border-slate-200 w-full text-center">
+                        🖨️ থার্মাল রোল লেবেল (প্রিন্টারে মোট {thermalCopies} টি বের হবে)
+                      </div>
+                      {renderThermalSticker(0)}
+                      {thermalCopies > 1 && (
+                        <div className="text-[9px] text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-mono">
+                          +{thermalCopies - 1} টি অতিরিক্ত স্টিকার রোলে পরপর প্রিন্ট হবে
+                        </div>
+                      )}
+                    </div>
+                  ) : format === 'sheet-a4' ? (
                     renderA4SheetContent()
-                  ) : format === 'garment-tag' ? (
+                  ) : (
+                    /* Garment Hanging tag */
                     <div className="max-w-[280px] mx-auto p-4 bg-white border-2 border-slate-900 rounded-xl relative flex flex-col justify-between text-slate-900">
-                      {/* Punch Hole Marker */}
                       <div className="w-4 h-4 rounded-full border-2 border-dashed border-slate-400 mx-auto -mt-1 mb-2 bg-slate-50 flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                       </div>
-
-                      {/* Brand Header */}
                       <div className="text-center pb-2 border-b-2 border-slate-900">
                         <h2 className="text-base font-black tracking-tight text-slate-900 leading-none">
                           {brandDisplayName}
@@ -695,7 +920,6 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                         </p>
                       </div>
 
-                      {/* Mini Dress Image & Specs */}
                       <div className="py-2.5 flex items-center gap-2.5 border-b border-dashed border-slate-300">
                         <div className="w-16 h-20 rounded-lg overflow-hidden border border-slate-300 bg-slate-100 shrink-0">
                           <img
@@ -721,7 +945,6 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                         </div>
                       </div>
 
-                      {/* QR Code */}
                       <div className="py-2 flex items-center justify-between gap-2 border-b border-slate-900">
                         <div className="flex-1 space-y-0.5">
                           <span className="text-[9px] font-bold text-slate-800 uppercase tracking-wider block">
@@ -733,16 +956,11 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                         </div>
                         <div className="w-16 h-16 bg-white p-1 rounded-md border border-slate-300 shrink-0 flex items-center justify-center">
                           {qrDataUrl && (
-                            <img
-                              src={qrDataUrl}
-                              alt="Product QR"
-                              className="w-full h-full object-contain"
-                            />
+                            <img src={qrDataUrl} alt="Product QR" className="w-full h-full object-contain" />
                           )}
                         </div>
                       </div>
 
-                      {/* Price */}
                       <div className="pt-2 text-center">
                         <div className="text-[9px] uppercase tracking-wider font-bold text-slate-500">
                           সর্বোচ্চ খুচরা বিক্রয় মূল্য (MRP)
@@ -752,75 +970,51 @@ export const ProductStickerModal: React.FC<ProductStickerModalProps> = ({
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    /* Thermal compact */
-                    <div className="max-w-[260px] mx-auto p-2.5 bg-white border border-slate-800 rounded-md flex flex-col justify-between text-slate-900">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-1">
-                        <div>
-                          <span className="text-[11px] font-black text-slate-900 block">
-                            {brandDisplayName}
-                          </span>
-                          <span className="text-[8px] text-slate-500 block">
-                            {brandDisplayPhone}
-                          </span>
-                        </div>
-                        <span className="px-1.5 py-0.5 bg-slate-900 text-white font-mono text-[10px] font-bold rounded">
-                          {product.productCode}
-                        </span>
-                      </div>
-                      <div className="py-2 flex items-center gap-2">
-                        <div className="w-11 h-11 bg-white border border-slate-300 rounded shrink-0 p-0.5">
-                          {qrDataUrl && (
-                            <img src={qrDataUrl} alt="QR" className="w-full h-full object-contain" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[10px] font-bold text-slate-900 truncate">
-                            {product.name}
-                          </div>
-                          <div className="text-[8px] text-slate-600 truncate">
-                            {product.color} · {product.size}
-                          </div>
-                          <div className="text-[12px] font-black font-mono text-slate-900 mt-0.5">
-                            {sellingPrice !== '' ? formatBDT(Number(sellingPrice)) : '-'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Note below preview */}
-              <div className="w-full mt-2.5 px-2 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+              {/* Helpful Tip */}
+              <div className="w-full mt-2.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                 <p className="text-[11px] text-emerald-300 font-medium">
-                  ✨ <strong>A4 পেজের একদম উপর থেকে প্রিন্ট হবে</strong> — উপরে কোনো খালি জায়গা নষ্ট হবে না। প্রিন্ট দিয়ে কাঁচি দিয়ে সহজে কেটে প্রোডাক্টে লাগাতে পারবেন।
+                  {format === 'thermal-compact' ? (
+                    <span>
+                      💡 থার্মাল প্রিন্টারে প্রিন্ট দিলে <strong>{activeCopies} টি লেবেল রোলে পর পর বের হবে</strong>।
+                    </span>
+                  ) : (
+                    <span>
+                      💡 A4 পেজের একদম <strong>উপর থেকে সাজানো</strong> থাকবে — কোনো কাগজ নষ্ট হবে না।
+                    </span>
+                  )}
                 </p>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="px-2 py-1 bg-emerald-500 text-slate-950 font-black rounded text-[11px] hover:bg-emerald-400 cursor-pointer shrink-0 ml-2"
+                >
+                  🖨️ প্রিন্ট করুন
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. DEDICATED PRINT PORTAL (Mounted directly to document.body, positioned at top: 0 in @media print) */}
+      {/* 2. DEDICATED PRINT PORTAL (Mounted directly to document.body) */}
       {createPortal(
         <div id="product-sticker-print-portal" className="hidden print:block">
-          {format === 'sheet-a4' ? (
+          {format === 'thermal-compact' ? (
+            /* Thermal Printer: sequence of individual labels with page breaks */
+            <div className="thermal-print-container">
+              {Array.from({ length: thermalCopies }).map((_, i) => renderThermalSticker(i))}
+            </div>
+          ) : format === 'sheet-a4' ? (
             renderA4SheetContent()
           ) : (
-            /* For single tag or thermal when printed to A4 paper, render neatly at top-left of the A4 page */
+            /* Single Tag */
             <div className="w-full max-w-[194mm] mx-auto bg-white text-black p-2 font-sans">
-              <div className="flex items-center justify-between border-b border-slate-400 pb-1 mb-3 text-[9px] text-slate-600 font-mono">
-                <span>{brandDisplayName} · সিঙ্গেল লেবেল প্রিন্ট</span>
-                <span>কোড: {product.productCode}</span>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="border-2 border-slate-900 rounded p-3 w-[260px] bg-white">
-                  {renderStickerItem(0)}
-                </div>
-              </div>
-              <div className="mt-4 pt-2 border-t border-dashed border-slate-300 text-[8px] text-slate-400 font-mono">
-                ✂️ কাটিং গাইড — কাঁচি দিয়ে কেটে পোশাকে লাগান।
+              <div className="border-2 border-slate-900 rounded p-3 w-[260px] bg-white">
+                {renderA4StickerItem(0)}
               </div>
             </div>
           )}

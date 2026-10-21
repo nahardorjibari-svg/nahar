@@ -32,6 +32,9 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { ProductsView } from './components/products/ProductsView';
 import { ProductModal } from './components/products/ProductModal';
 import { ProductDetailDrawer } from './components/products/ProductDetailDrawer';
+import { ProductStickerModal } from './components/products/ProductStickerModal';
+import { ProductScanCardModal } from './components/products/ProductScanCardModal';
+import { ProductQrScannerModal } from './components/products/ProductQrScannerModal';
 import { StockManagementView } from './components/stock/StockManagementView';
 import { NewSaleView } from './components/sales/NewSaleView';
 import { SalesHistoryView } from './components/sales/SalesHistoryView';
@@ -80,6 +83,15 @@ export default function App() {
 
   // Product detail drawer
   const [productForDetailDrawer, setProductForDetailDrawer] = useState<Product | null>(null);
+
+  // Product Sticker Print Modal
+  const [productForStickerModal, setProductForStickerModal] = useState<Product | null>(null);
+
+  // Live Scanned Product Digital Card Modal
+  const [productForScanCardModal, setProductForScanCardModal] = useState<Product | null>(null);
+
+  // Built-in Camera/Barcode QR Scanner Modal
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
   // Invoice Print / View Modal
   const [orderForInvoiceModal, setOrderForInvoiceModal] = useState<SaleOrder | null>(null);
@@ -168,10 +180,24 @@ export default function App() {
           setIsInvoiceModalOpen(true);
         }
       }
+
+      // Check for Product Tag QR code scan (?scan_product=RP-001 or ?product=RP-001)
+      const scanProductCode = params.get('scan_product') || params.get('product') || params.get('code');
+      if (scanProductCode && products.length > 0) {
+        const target = scanProductCode.trim().toLowerCase();
+        const matchedProduct = products.find(
+          (p) =>
+            p.productCode.toLowerCase() === target ||
+            p.id.toLowerCase() === target
+        );
+        if (matchedProduct) {
+          setProductForScanCardModal(matchedProduct);
+        }
+      }
     } catch (err) {
       console.warn('URL param check failed', err);
     }
-  }, [orders]);
+  }, [orders, products]);
 
   // Compute low stock items
   const lowStockCount = products.filter(
@@ -228,6 +254,19 @@ export default function App() {
     setStockSelectedProductId(prod.id);
     handleNavigate('stock');
     setProductForDetailDrawer(null);
+  };
+
+  const handleOpenStickerModal = (prod: Product) => {
+    setProductForStickerModal(prod);
+  };
+
+  const handleSellProduct = (prod: Product) => {
+    if (user.role !== 'Super Admin') {
+      alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot make new sales.');
+      return;
+    }
+    setSellProductCode(prod.productCode);
+    handleNavigate('new-sale');
   };
 
   const handleQuickSearchCode = (code: string) => {
@@ -383,6 +422,7 @@ export default function App() {
           onOpenAddProduct={handleOpenAddProduct}
           onOpenAddStock={() => handleNavigate('stock')}
           onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}
+          onOpenQrScanner={() => setIsQrScannerOpen(true)}
           glassTheme={glassTheme}
           onThemeChange={handleThemeChange}
           enableAuraMotion={enableAuraMotion}
@@ -425,15 +465,10 @@ export default function App() {
                 onEditProduct={handleEditProduct}
                 onViewProduct={setProductForDetailDrawer}
                 onAddStockForProduct={handleAddStockForProduct}
-                onSellProduct={(prod) => {
-                  if (user.role !== 'Super Admin') {
-                    alert('⚠️ Access Restricted: Admin and User roles have view-only access and cannot make new sales.');
-                    return;
-                  }
-                  setSellProductCode(prod.productCode);
-                  handleNavigate('new-sale');
-                }}
+                onSellProduct={handleSellProduct}
                 onDeleteProduct={handleDeleteProduct}
+                onPrintSticker={handleOpenStickerModal}
+                onOpenQrScanner={() => setIsQrScannerOpen(true)}
                 searchQuery={productsSearchQuery}
               />
             )}
@@ -444,6 +479,7 @@ export default function App() {
                 movements={movements}
                 onStockUpdated={loadData}
                 initialSelectedProductId={stockSelectedProductId}
+                onPrintSticker={handleOpenStickerModal}
               />
             )}
 
@@ -558,8 +594,11 @@ export default function App() {
           setIsProductModalOpen(false);
           setProductToEdit(null);
         }}
-        onSave={loadData}
+        onSave={() => {
+          loadData();
+        }}
         productToEdit={productToEdit}
+        onOpenStickerModal={handleOpenStickerModal}
       />
 
       {/* Product Detail & Specs Drawer */}
@@ -569,6 +608,41 @@ export default function App() {
         onEdit={handleEditProduct}
         onAddStock={handleAddStockForProduct}
         movements={movements}
+        onPrintSticker={handleOpenStickerModal}
+        onSellProduct={handleSellProduct}
+      />
+
+      {/* Product Sticker & QR Code Print / Download Modal */}
+      <ProductStickerModal
+        isOpen={!!productForStickerModal}
+        onClose={() => setProductForStickerModal(null)}
+        product={productForStickerModal}
+        brandSettings={brandSettings}
+        onOpenLiveCard={(prod) => {
+          setProductForStickerModal(null);
+          setProductForScanCardModal(prod);
+        }}
+        onSellProduct={handleSellProduct}
+      />
+
+      {/* Live Scanned Product Digital Card Modal */}
+      <ProductScanCardModal
+        isOpen={!!productForScanCardModal}
+        onClose={() => setProductForScanCardModal(null)}
+        product={productForScanCardModal}
+        brandSettings={brandSettings}
+        onSellProduct={handleSellProduct}
+        onPrintSticker={handleOpenStickerModal}
+      />
+
+      {/* Built-in Camera & Code QR Scanner Modal */}
+      <ProductQrScannerModal
+        isOpen={isQrScannerOpen}
+        onClose={() => setIsQrScannerOpen(false)}
+        products={products}
+        onProductFound={(found) => {
+          setProductForScanCardModal(found);
+        }}
       />
 
       {/* Printable / Downloadable Invoice Modal with QR Verification */}

@@ -12,6 +12,7 @@ import {
   Sparkles,
   Waves,
   Palette,
+  ExternalLink,
 } from 'lucide-react';
 import { BrandSettings, GlassTheme } from '../../types';
 import { DataService } from '../../services/dataService';
@@ -343,9 +344,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </h4>
               <p className="mt-0.5 leading-relaxed text-slate-300">
                 {isCloud
-                  ? `Active Firebase Project: ${firebaseConfig?.projectId}. Product catalog, stock adjustments, and audit ledger are syncing live in Cloud Firestore.`
+                  ? `Active Firebase Project: ${firebaseConfig?.projectId}. Product catalog, stock adjustments, sales invoices, and audit ledger are syncing live in Cloud Firestore.`
                   : 'Changes are preserved in your current browser session. To enable cross-device persistence and cloud backups, connect your Firebase project.'}
               </p>
+              {isCloud && (
+                <div className="pt-2">
+                  <a
+                    href={`https://console.firebase.google.com/project/${firebaseConfig?.projectId}/firestore/databases/-default-/data`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold cursor-pointer transition-colors"
+                  >
+                    <span>ফায়ারবেস কনসোলে লাইভ ডাটা দেখুন (View Firestore Data)</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

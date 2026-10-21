@@ -13,6 +13,8 @@ import {
   Calendar,
   Layers,
   Filter,
+  QrCode,
+  Tag,
 } from 'lucide-react';
 import { Product, StockMovement, MovementType } from '../../types';
 import { DataService, formatBDT, formatBDDate } from '../../services/dataService';
@@ -22,6 +24,7 @@ interface StockManagementViewProps {
   movements: StockMovement[];
   onStockUpdated: () => void;
   initialSelectedProductId?: string;
+  onPrintSticker?: (product: Product) => void;
 }
 
 const ADJUSTMENT_REASONS = [
@@ -39,6 +42,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
   movements,
   onStockUpdated,
   initialSelectedProductId,
+  onPrintSticker,
 }) => {
   // Product Search / Selector State
   const [productSearchInput, setProductSearchInput] = useState('');
@@ -348,6 +352,17 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     Stock is at or below the alert threshold ({selectedProduct.lowStockThreshold} pcs). Restocking recommended.
                   </span>
                 </div>
+              )}
+
+              {onPrintSticker && (
+                <button
+                  type="button"
+                  onClick={() => onPrintSticker(selectedProduct)}
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-400/40 text-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+                >
+                  <QrCode className="w-4 h-4 text-emerald-400" />
+                  <span>🏷️ এই পণ্যের স্মার্ট স্টিকার ও QR প্রিন্ট করুন</span>
+                </button>
               )}
             </div>
           ) : (

@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { X, Edit2, Boxes, History, Check, AlertTriangle, Layers, Tag, ShieldCheck } from 'lucide-react';
+import {
+  X,
+  Edit2,
+  Boxes,
+  History,
+  Check,
+  AlertTriangle,
+  Layers,
+  Tag,
+  ShieldCheck,
+  QrCode,
+  ShoppingBag,
+  Printer,
+} from 'lucide-react';
 import { Product, StockMovement } from '../../types';
 import { formatBDT, formatBDDate } from '../../services/dataService';
 
@@ -9,6 +22,8 @@ interface ProductDetailDrawerProps {
   onEdit: (product: Product) => void;
   onAddStock: (product: Product) => void;
   movements: StockMovement[];
+  onPrintSticker?: (product: Product) => void;
+  onSellProduct?: (product: Product) => void;
 }
 
 export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
@@ -17,6 +32,8 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   onEdit,
   onAddStock,
   movements,
+  onPrintSticker,
+  onSellProduct,
 }) => {
   if (!product) return null;
 
@@ -152,6 +169,29 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
               <Boxes className="w-4 h-4" />
               <span>Add Stock / Batch Inward</span>
             </button>
+
+            {/* Quick Action Grid: Sticker & Live POS Sell */}
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {onPrintSticker && (
+                <button
+                  onClick={() => onPrintSticker(product)}
+                  className="py-2 px-3 bg-white/10 hover:bg-white/15 border border-white/20 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>🏷️ স্টিকার ও QR প্রিন্ট</span>
+                </button>
+              )}
+
+              {onSellProduct && (
+                <button
+                  onClick={() => onSellProduct(product)}
+                  className="py-2 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-xl font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>⚡ সরাসরি বিক্রি</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Financial Breakdown */}

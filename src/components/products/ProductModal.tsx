@@ -6,8 +6,9 @@ import { DataService, formatBDT } from '../../services/dataService';
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (savedProduct?: Product) => void;
   productToEdit?: Product | null;
+  onOpenStickerModal?: (product: Product) => void;
 }
 
 const CATEGORIES = [
@@ -40,8 +41,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   onSave,
   productToEdit,
+  onOpenStickerModal,
 }) => {
   const isEditing = !!productToEdit;
+  const [autoOpenSticker, setAutoOpenSticker] = useState(true);
 
   const [productCode, setProductCode] = useState('');
   const [name, setName] = useState('');
@@ -174,8 +177,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      let savedProduct: Product;
       if (isEditing && productToEdit) {
-        await DataService.updateProduct(productToEdit.id, {
+        savedProduct = await DataService.updateProduct(productToEdit.id, {
           productCode: productCode.trim().toUpperCase(),
           name: name.trim(),
           category: effectiveCategory,
@@ -190,7 +194,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           images: images.length > 0 ? images : ['/src/assets/images/three_piece_royal_floral_1792247226094.jpg'],
         });
       } else {
-        await DataService.addProduct({
+        savedProduct = await DataService.addProduct({
           productCode: productCode.trim().toUpperCase(),
           name: name.trim(),
           category: effectiveCategory,
@@ -207,8 +211,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         });
       }
 
-      onSave();
+      onSave(savedProduct);
       onClose();
+
+      if (autoOpenSticker && onOpenStickerModal) {
+        onOpenStickerModal(savedProduct);
+      }
     } catch (err: any) {
       alert(err.message || 'Error saving product');
     } finally {
@@ -537,29 +545,43 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             />
           </div>
 
-          {/* Footer Submit */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !!codeError}
-              className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {isSubmitting ? (
-                <span>Saving...</span>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>{isEditing ? 'Save Changes' : 'Create 3-Piece Product'}</span>
-                </>
-              )}
-            </button>
+          {/* Footer Submit & Auto Print Sticker Checkbox */}
+          <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 hover:text-white select-none">
+              <input
+                type="checkbox"
+                checked={autoOpenSticker}
+                onChange={(e) => setAutoOpenSticker(e.target.checked)}
+                className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-black/40 border-white/20"
+              />
+              <span className="flex items-center gap-1 font-medium">
+                <span>🏷️ সেভ করার সাথে সাথে স্টিকার ও QR প্রিন্ট উইন্ডো খুলুন</span>
+              </span>
+            </label>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-white/20 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !!codeError}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5 text-xs"
+              >
+                {isSubmitting ? (
+                  <span>Saving...</span>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>{isEditing ? 'Save Changes' : 'Create & Generate Sticker'}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Search, Plus, Sparkles, Waves, Check, ChevronDown, Phone, MessageCircle } from 'lucide-react';
+import { Menu, Search, Plus, Sparkles, Waves, Check, ChevronDown, Phone, MessageCircle, QrCode, Database, Cloud } from 'lucide-react';
 import { PageId, BrandSettings, GlassTheme, GlassFrostMode } from '../../types';
 
 interface TopHeaderProps {
@@ -11,6 +11,7 @@ interface TopHeaderProps {
   onOpenAddStock: () => void;
   onOpenNewSale?: () => void;
   onOpenFirebaseModal: () => void;
+  onOpenQrScanner?: () => void;
   glassTheme?: GlassTheme;
   onThemeChange?: (theme: GlassTheme) => void;
   enableAuraMotion?: boolean;
@@ -77,6 +78,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onQuickSearchCode,
   onOpenAddProduct,
   onOpenNewSale,
+  onOpenFirebaseModal,
+  onOpenQrScanner,
   glassTheme = 'emerald',
   onThemeChange,
   enableAuraMotion = true,
@@ -303,6 +306,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             className="pl-9 pr-3 py-1.5 glass-input rounded-xl text-xs text-white placeholder:text-slate-500 focus:ring-1 focus:ring-emerald-400 uppercase font-mono-numbers w-36 lg:w-48 transition-all"
           />
         </form>
+
+        {/* QR Scanner Trigger Button */}
+        {onOpenQrScanner && (
+          <button
+            onClick={onOpenQrScanner}
+            className="p-2 glass-card hover:bg-white/15 border border-white/20 text-emerald-300 hover:text-white rounded-xl transition-all cursor-pointer shadow-sm"
+            title="📷 পোশাকের QR কোড / বারকোড স্ক্যান করুন (Scan QR / Barcode)"
+          >
+            <QrCode className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Cloud Firebase Data Viewer Button */}
+        <button
+          onClick={onOpenFirebaseModal}
+          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 glass-card hover:bg-white/15 border border-white/20 text-slate-300 hover:text-emerald-300 rounded-xl transition-all cursor-pointer text-xs font-semibold"
+          title="☁️ Firebase ক্লাউড ডাটাবেজ ইন্সপেক্টর (View Cloud Collections)"
+        >
+          <Database className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden xl:inline">Firebase ডাটা</span>
+        </button>
 
         {onOpenNewSale && (
           <button

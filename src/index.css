@@ -319,7 +319,8 @@ input[type="password"] {
   body * {
     visibility: hidden;
   }
-  #invoice-printable-sheet, #invoice-printable-sheet * {
+  #invoice-printable-sheet, #invoice-printable-sheet *,
+  #product-sticker-printable, #product-sticker-printable * {
     visibility: visible;
   }
   #invoice-printable-sheet {
@@ -330,5 +331,16 @@ input[type="password"] {
     margin: 0;
     padding: 10px;
     box-shadow: none;
+  }
+  #product-sticker-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    background: #ffffff !important;
+    color: #0f172a !important;
   }
 }

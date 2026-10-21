@@ -28,7 +28,7 @@ export const FirebaseSetupModal: React.FC<FirebaseSetupModalProps> = ({
 
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'settings' | 'guide' | 'rules'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'data-viewer' | 'guide' | 'rules'>('settings');
   const [copiedRules, setCopiedRules] = useState(false);
 
   if (!isOpen) return null;
@@ -130,6 +130,16 @@ service cloud.firestore {
             }`}
           >
             Connection Credentials
+          </button>
+          <button
+            onClick={() => setActiveTab('data-viewer')}
+            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer ${
+              activeTab === 'data-viewer'
+                ? 'border-slate-900 text-slate-900'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            ডাটা দেখার নিয়ম (View Data)
           </button>
           <button
             onClick={() => setActiveTab('guide')}
@@ -242,6 +252,81 @@ service cloud.firestore {
                   <span>{testResult.message}</span>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'data-viewer' && (
+            <div className="space-y-4 text-slate-700">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <Database className="w-4 h-4 text-emerald-600" />
+                    <span>Firebase এ সেভ হওয়া ডাটা দেখার সহজ উপায়</span>
+                  </h4>
+                  {projectId && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono px-2 py-0.5 rounded border border-emerald-300">
+                      Project: {projectId}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  আপনার সফটওয়্যার থেকে পণ্য, অর্ডার, ডেলিভারি ও খরচ সরাসরি গুগল ফায়ারবেস ক্লাউড ফায়ারস্টোরে (Cloud Firestore) রিয়েল-টাইমে জমা হয়।
+                </p>
+                <div className="pt-2">
+                  <a
+                    href={
+                      projectId
+                        ? `https://console.firebase.google.com/project/${projectId}/firestore/databases/-default-/data`
+                        : 'https://console.firebase.google.com'
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow transition-all cursor-pointer"
+                  >
+                    <span>ফায়ারবেস কনসোলে লাইভ ডাটা দেখুন (Open Firestore Console)</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h5 className="font-bold text-slate-900 text-xs">ফায়ারবেসে আপনার ডাটা যে যে ফোল্ডারে (Collections) জমা হয়:</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <strong className="text-slate-900 font-mono block">📁 products</strong>
+                    <span className="text-slate-600">সকল ৩-পিস পণ্যের বিবরণ, স্টক সংখ্যা, পাইকারি খরচ ও ছবি।</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <strong className="text-slate-900 font-mono block">📁 orders</strong>
+                    <span className="text-slate-600">সকল বিক্রয় চালান, কাস্টমার তথ্য, পেমেন্ট ও ইনভয়েস নম্বর।</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <strong className="text-slate-900 font-mono block">📁 expenses</strong>
+                    <span className="text-slate-600">প্রতিদিনের প্যাকেজিং, বুস্টিং, চা-নাস্তা ও ডেলিভারি খরচের ভাউচার।</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <strong className="text-slate-900 font-mono block">📁 customers</strong>
+                    <span className="text-slate-600">গ্রাহকদের নাম, ফোন নম্বর, ঠিকানা ও মোট কত টাকার পণ্য কিনেছেন।</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <strong className="text-slate-900 font-mono block">📁 stock_movements</strong>
+                    <span className="text-slate-600">স্টক যোগ, বিক্রয় বা রিটার্নের প্রতি মুহূর্তের অডিট হিস্টোরি।</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <strong className="text-slate-900 font-mono block">📁 brand_settings</strong>
+                    <span className="text-slate-600">নাহার দর্জি বাড়ি ব্র্যান্ড সেটিংস, ঠিকানা ও ইনভয়েস নোট।</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-[11px] space-y-1">
+                <strong>💡 কিভাবে বুঝবেন ডাটা ঠিকভাবে সেভ হচ্ছে?</strong>
+                <p>
+                  ১. অ্যাপের একদম ওপরে দেখুন <strong>"Cloud Firestore Live"</strong> সবুজ বাতি জ্বলছে কি না।<br />
+                  ২. এই পপআপের নিচে <strong>"Test Connection"</strong> বাটনে চাপ দিন — সফল হলে সবুজ চেকমার্ক আসবে।<br />
+                  ৩. অন্য যেকোনো মোবাইল বা কম্পিউটার দিয়ে এই সাইটে লগইন করলেও সব ডাটা স্বয়ংক্রিয়ভাবে চলে আসবে।
+                </p>
+              </div>
             </div>
           )}
 

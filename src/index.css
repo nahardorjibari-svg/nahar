@@ -316,31 +316,71 @@ input[type="password"] {
 }
 
 @media print {
-  body * {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 6mm;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* When printing stickers, hide #root completely to guarantee stickers start at the exact top of the A4 page */
+  body.printing-stickers-active #root,
+  body:has(#product-sticker-print-portal) #root {
+    display: none !important;
+  }
+
+  /* Sticker portal printed directly from body at top 0 */
+  #product-sticker-print-portal {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    page-break-after: avoid;
+  }
+
+  #product-sticker-print-portal * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* For invoice printing fallback when sticker portal is inactive */
+  body:not(.printing-stickers-active) body * {
     visibility: hidden;
   }
-  #invoice-printable-sheet, #invoice-printable-sheet *,
-  #product-sticker-printable, #product-sticker-printable * {
-    visibility: visible;
+
+  #invoice-printable-sheet,
+  #invoice-printable-sheet * {
+    visibility: visible !important;
   }
+
   #invoice-printable-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 10px;
-    box-shadow: none;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    box-shadow: none !important;
   }
-  #product-sticker-printable {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    background: #ffffff !important;
-    color: #0f172a !important;
+
+  .sticker-print-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

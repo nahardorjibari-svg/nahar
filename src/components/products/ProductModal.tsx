@@ -12,6 +12,10 @@ interface ProductModalProps {
 }
 
 const CATEGORIES = [
+  'অর্গানিক ও স্কিনকেয়ার (Organic & Skincare)',
+  'কোল্ড প্রেসড নারিকেল তেল (Coconut Oil)',
+  'তেল ও হেলথকেয়ার (Health & Hair Oil)',
+  'কসমেটিক্স ও বিউটি (Cosmetics & Beauty)',
   'Cotton Georgette 3-Piece',
   'Luxury Lawn 3-Piece',
   'Silk Festive 3-Piece',
@@ -23,6 +27,9 @@ const CATEGORIES = [
 ];
 
 const SIZES = [
+  '500 mL কাঁচের বয়াম / Jar',
+  '250 mL বোতল / Bottle',
+  '1 Litre বোতল / Jar',
   'Unstitched / Free Size',
   'Semi-Stitched',
   'Stitched M (38)',
@@ -32,8 +39,10 @@ const SIZES = [
 ];
 
 const PRESET_IMAGES = [
-  { label: 'Royal Blue Floral', url: '/src/assets/images/three_piece_royal_floral_1792247226094.jpg' },
-  { label: 'Emerald Green Lawn', url: '/src/assets/images/three_piece_emerald_silk_1792247226228.jpg' },
+  { label: 'নারিকেল তেল ৫০০ মিলি (Coconut Oil 500mL)', url: '/assets/aistudio/IMG_5666.JPG_9edab587.jpeg' },
+  { label: 'নারিকেল তেল প্রেজেন্টেশন (Coconut Oil Presenter)', url: '/assets/aistudio/IMG_5673_72fed036.JPEG' },
+  { label: 'Royal Blue Floral 3-Piece', url: '/src/assets/images/three_piece_royal_floral_1792247226094.jpg' },
+  { label: 'Emerald Green Lawn 3-Piece', url: '/src/assets/images/three_piece_emerald_silk_1792247226228.jpg' },
 ];
 
 export const ProductModal: React.FC<ProductModalProps> = ({

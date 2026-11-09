@@ -237,8 +237,44 @@ export interface SettlementRecord {
   recordedBy: string;
 }
 
+export type PreOrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'DONE' | 'CANCELLED';
+
+export interface PreOrderItem {
+  productId?: string;
+  productCode: string;
+  productName: string;
+  category?: string;
+  image?: string;
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+}
+
+export interface PreOrder {
+  id: string; // e.g. "PRE-1001"
+  orderNumber: string; // "PO-2026-001"
+  customerName: string;
+  phone: string;
+  district: string;
+  fullAddress: string;
+  items: PreOrderItem[];
+  advancePayment: number; // e.g. ৳200
+  deliveryFee: number; // e.g. 70 or 130
+  totalAmount: number; // Sum of items total + deliveryFee
+  dueAmount: number; // totalAmount - advancePayment
+  courierName?: string; // Steadfast, Pathao, RedX, Showroom
+  courierTrackingCode?: string;
+  rawPastedText?: string; // Original customer message if auto-filled
+  notes?: string;
+  status: PreOrderStatus;
+  createdAt: string;
+  doneAt?: string;
+  createdSaleOrderId?: string;
+}
+
 export type PageId = 
   | 'dashboard'
+  | 'pre-orders'
   | 'products'
   | 'stock'
   | 'new-sale'

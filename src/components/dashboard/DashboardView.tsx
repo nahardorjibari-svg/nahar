@@ -11,6 +11,7 @@ import {
   Shirt,
   PackageCheck,
   CheckCircle2,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Product, StockMovement, PageId, BrandSettings, SaleOrder } from '../../types';
 import { formatBDT } from '../../services/dataService';
@@ -153,8 +154,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
         </div>
-        {/* Spacer for 3-col layout */}
-        <div className="hidden lg:block"></div>
+        {/* Pre-Orders Quick Action Card */}
+        <div
+          onClick={() => onNavigate('pre-orders')}
+          className="glass-card glass-shine-top p-5 rounded-2xl relative overflow-hidden group cursor-pointer hover:border-emerald-400/50 transition-all"
+        >
+          <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-300" />
+          <div className="flex items-start justify-between relative z-10">
+            <div>
+              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
+                📋 প্রি-অর্ডার শিট (Pre-Orders)
+              </span>
+              <div className="text-sm font-extrabold text-white mt-1.5 tracking-tight flex items-center gap-1.5">
+                <span>কাস্টমার মেসেজ ও পার্সেল স্লিপ</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                অটো ফিলাপ ও ড্রপডাউন পণ্য নির্বাচন ➜
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 shadow-inner shrink-0">
+              <FileSpreadsheet className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
 
         {/* Existing KPIs */}
         <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

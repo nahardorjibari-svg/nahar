@@ -50,7 +50,8 @@ import { ReportsView } from './components/reports/ReportsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AdminLoginView } from './components/auth/AdminLoginView';
 import { DailyExpensesView } from './components/expenses/DailyExpensesView';
-import { DailyExpense } from './types';
+import { PreOrdersView } from './components/preorders/PreOrdersView';
+import { DailyExpense, PreOrder } from './types';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('dashboard');
@@ -63,6 +64,7 @@ export default function App() {
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
   const [settlements, setSettlements] = useState<SettlementRecord[]>([]);
   const [expenses, setExpenses] = useState<DailyExpense[]>([]);
+  const [preOrders, setPreOrders] = useState<PreOrder[]>([]);
 
   const [user, setUser] = useState<UserSession>({
     id: '',
@@ -134,7 +136,7 @@ export default function App() {
   // Load all application data
   const loadData = useCallback(async () => {
     try {
-      const [prods, movs, brand, ords, vids, custs, rets, sets, exps] = await Promise.all([
+      const [prods, movs, brand, ords, vids, custs, rets, sets, exps, preOrds] = await Promise.all([
         DataService.getProducts(),
         DataService.getStockMovements(),
         DataService.getBrandSettings(),
@@ -144,6 +146,7 @@ export default function App() {
         DataService.getReturns(),
         DataService.getSettlements(),
         DataService.getDailyExpenses(),
+        DataService.getPreOrders(),
       ]);
       setProducts(prods);
       setMovements(movs);
@@ -154,6 +157,7 @@ export default function App() {
       setReturns(rets);
       setSettlements(sets);
       setExpenses(exps);
+      setPreOrders(preOrds);
     } catch (e) {
       console.error('Failed to load application data:', e);
     }
@@ -398,6 +402,7 @@ export default function App() {
             user={user}
             onLogout={handleLogout}
             lowStockCount={lowStockCount}
+            preOrderCount={preOrders.filter(p => p.status !== 'DONE' && p.status !== 'CANCELLED').length}
             glassTheme={glassTheme}
             isExpanded={isSidebarExpanded}
           />
@@ -444,6 +449,19 @@ export default function App() {
                 onOpenAddProduct={handleOpenAddProduct}
                 onOpenAddStockForProduct={handleAddStockForProduct}
                 onViewProduct={setProductForDetailDrawer}
+              />
+            )}
+
+            {currentPage === 'pre-orders' && (
+              <PreOrdersView
+                preOrders={preOrders}
+                products={products}
+                brandSettings={brandSettings}
+                onRefreshPreOrders={loadData}
+                onNewSale={(code) => {
+                  setSellProductCode(code);
+                  handleNavigate('new-sale');
+                }}
               />
             )}
 
@@ -585,6 +603,7 @@ export default function App() {
         isDrawerOpen={isMobileDrawerOpen}
         onCloseDrawer={() => setIsMobileDrawerOpen(false)}
         lowStockCount={lowStockCount}
+        preOrderCount={preOrders.filter(p => p.status !== 'DONE' && p.status !== 'CANCELLED').length}
       />
 
       {/* Add / Edit Product Modal */}

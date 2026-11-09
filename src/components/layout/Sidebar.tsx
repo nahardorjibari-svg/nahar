@@ -17,6 +17,7 @@ import {
   DollarSign,
   Sparkles,
   Receipt,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { PageId, BrandSettings, UserSession, GlassTheme } from '../../types';
 
@@ -27,6 +28,7 @@ interface SidebarProps {
   user: UserSession;
   onLogout: () => void;
   lowStockCount: number;
+  preOrderCount?: number;
   glassTheme?: GlassTheme;
   isExpanded?: boolean;
 }
@@ -38,9 +40,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user,
   onLogout,
   lowStockCount,
+  preOrderCount = 0,
 }) => {
   const navItems = [
     { id: 'dashboard' as PageId, label: 'Dashboard', icon: LayoutDashboard },
+    {
+      id: 'pre-orders' as PageId,
+      label: 'Pre-Orders (প্রি-অর্ডার)',
+      icon: FileSpreadsheet,
+      badge: preOrderCount > 0 ? `${preOrderCount}` : null,
+      badgeColor: 'bg-emerald-500/30 text-emerald-300 border border-emerald-400/30',
+    },
     { id: 'new-sale' as PageId, label: 'New Sale / Order', icon: ShoppingCart },
     { id: 'expenses' as PageId, label: 'খরচ (Daily Expenses)', icon: Receipt },
     { id: 'products' as PageId, label: 'Products', icon: Shirt, badge: null },

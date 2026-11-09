@@ -11,6 +11,8 @@ import {
   OrderStatus,
   PaymentStatus,
   DailyExpense,
+  PreOrder,
+  PreOrderStatus,
 } from '../types';
 import {
   INITIAL_BRAND_SETTINGS,
@@ -20,6 +22,7 @@ import {
   INITIAL_VIDEOS,
   INITIAL_ORDERS,
   INITIAL_RETURNS,
+  INITIAL_PRE_ORDERS,
 } from './seedData';
 import { getFirebaseInstances } from './firebaseConfig';
 import {
@@ -68,6 +71,7 @@ const CUSTOMERS_KEY = 'nahar_customers_cache_v2';
 const RETURNS_KEY = 'nahar_returns_cache_v2';
 const SETTLEMENTS_KEY = 'nahar_settlements_cache_v2';
 const EXPENSES_KEY = 'nahar_daily_expenses_v2';
+const PRE_ORDERS_KEY = 'nahar_pre_orders_cache_v2';
 
 const INITIAL_DAILY_EXPENSES: DailyExpense[] = [
   {
@@ -117,11 +121,35 @@ function setLocalExpenses(expenses: DailyExpense[]): void {
   localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
 }
 
+function getLocalPreOrders(): PreOrder[] {
+  try {
+    const data = localStorage.getItem(PRE_ORDERS_KEY);
+    if (data) return JSON.parse(data);
+  } catch (e) {
+    console.error('Error reading local pre-orders', e);
+  }
+  localStorage.setItem(PRE_ORDERS_KEY, JSON.stringify(INITIAL_PRE_ORDERS));
+  return INITIAL_PRE_ORDERS;
+}
+
+function setLocalPreOrders(preOrders: PreOrder[]): void {
+  localStorage.setItem(PRE_ORDERS_KEY, JSON.stringify(preOrders));
+}
+
 // Local storage helpers
 function getLocalProducts(): Product[] {
   try {
     const data = localStorage.getItem(PRODUCTS_KEY);
-    if (data) return JSON.parse(data);
+    if (data) {
+      const parsed: Product[] = JSON.parse(data);
+      // Ensure Coconut Oil (OIL-001) exists in the catalog
+      if (INITIAL_PRODUCTS.length > 0 && !parsed.some(p => p.productCode === 'OIL-001')) {
+        const merged = [...INITIAL_PRODUCTS, ...parsed];
+        localStorage.setItem(PRODUCTS_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
+    }
   } catch (e) {
     console.error('Error reading local products', e);
   }
@@ -1520,6 +1548,110 @@ export class DataService {
       totalStockPieces,
       perPieceExpense,
     };
+  }
+
+  // ==========================================
+  // PRE-ORDERS (প্রি-অর্ডার ম্যানেজমেন্ট)
+  // ==========================================
+  public static async getPreOrders(): Promise<PreOrder[]> {
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        const q = query(collection(db, 'pre_orders'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const cloud = snap.docs.map(d => d.data() as PreOrder);
+          setLocalPreOrders(cloud);
+          return cloud;
+        }
+      } catch (err) {
+        handleFirestoreNotice('fetch pre-orders', err);
+      }
+    }
+    return getLocalPreOrders();
+  }
+
+  public static async savePreOrder(
+    data: Omit<PreOrder, 'id' | 'createdAt'>
+  ): Promise<PreOrder> {
+    const newPreOrder: PreOrder = {
+      ...data,
+      id: `pre-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        await setDoc(doc(db, 'pre_orders', newPreOrder.id), cleanForFirestore(newPreOrder));
+      } catch (err) {
+        handleFirestoreNotice('save pre-order', err);
+      }
+    }
+
+    const current = getLocalPreOrders();
+    const updated = [newPreOrder, ...current];
+    setLocalPreOrders(updated);
+    return newPreOrder;
+  }
+
+  public static async updatePreOrder(
+    id: string,
+    updates: Partial<PreOrder>
+  ): Promise<PreOrder> {
+    const current = getLocalPreOrders();
+    const existing = current.find(p => p.id === id);
+    if (!existing) {
+      throw new Error(`PreOrder not found: ${id}`);
+    }
+
+    const updatedPreOrder: PreOrder = {
+      ...existing,
+      ...updates,
+    };
+
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        await updateDoc(doc(db, 'pre_orders', id), cleanForFirestore(updates));
+      } catch (err) {
+        handleFirestoreNotice('update pre-order', err);
+      }
+    }
+
+    const updated = current.map(p => p.id === id ? updatedPreOrder : p);
+    setLocalPreOrders(updated);
+    return updatedPreOrder;
+  }
+
+  public static async markPreOrderDone(id: string): Promise<PreOrder> {
+    return this.updatePreOrder(id, {
+      status: 'DONE',
+      doneAt: new Date().toISOString(),
+    });
+  }
+
+  public static async reopenPreOrder(id: string): Promise<PreOrder> {
+    return this.updatePreOrder(id, {
+      status: 'CONFIRMED',
+      doneAt: undefined,
+    });
+  }
+
+  public static async deletePreOrder(id: string): Promise<boolean> {
+    const { db, isConfigured } = getFirebaseInstances();
+    if (isConfigured && db) {
+      try {
+        await deleteDoc(doc(db, 'pre_orders', id));
+      } catch (err) {
+        handleFirestoreNotice('delete pre-order', err);
+      }
+    }
+
+    const current = getLocalPreOrders();
+    const updated = current.filter(p => p.id !== id);
+    setLocalPreOrders(updated);
+    return true;
   }
 
   // Reset to demo data

@@ -17,6 +17,7 @@ import {
   LogOut,
   MapPin,
   Receipt,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { PageId, BrandSettings, UserSession } from '../../types';
 
@@ -29,6 +30,7 @@ interface MobileNavProps {
   isDrawerOpen: boolean;
   onCloseDrawer: () => void;
   lowStockCount: number;
+  preOrderCount?: number;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
@@ -40,21 +42,18 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   isDrawerOpen,
   onCloseDrawer,
   lowStockCount,
+  preOrderCount = 0,
 }) => {
   const primaryTabs = [
     { id: 'dashboard' as PageId, label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'pre-orders' as PageId, label: 'Pre-Orders', icon: FileSpreadsheet, badge: preOrderCount > 0 ? preOrderCount : null },
     { id: 'new-sale' as PageId, label: 'New Sale', icon: ShoppingCart },
     { id: 'products' as PageId, label: 'Products', icon: Shirt },
-    {
-      id: 'stock' as PageId,
-      label: 'Stock',
-      icon: Boxes,
-      badge: lowStockCount > 0 ? lowStockCount : null,
-    },
   ];
 
   const fullNavItems = [
     { id: 'dashboard' as PageId, label: 'Dashboard Overview', icon: LayoutDashboard },
+    { id: 'pre-orders' as PageId, label: 'Pre-Orders (প্রি-অর্ডার)', icon: FileSpreadsheet, badge: preOrderCount > 0 ? `${preOrderCount} Active` : null },
     { id: 'new-sale' as PageId, label: 'New Sale / Order', icon: ShoppingCart },
     { id: 'expenses' as PageId, label: 'খরচ (Daily Expenses)', icon: Receipt },
     { id: 'products' as PageId, label: '3-Piece Products', icon: Shirt },
